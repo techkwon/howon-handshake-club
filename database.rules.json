@@ -212,7 +212,7 @@
               ".write": "auth != null && auth.uid === $uid",
               ".validate": "newData.hasChildren(['num'])",
               "num": {
-                ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 30"
+                ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99 && newData.val() % 1 === 0"
               },
               "joinedAt": {
                 ".validate": "newData.isNumber() && (newData.val() === now || newData.val() === data.val())"

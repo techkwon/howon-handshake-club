@@ -4,8 +4,10 @@
 //              주인공 성별 · 이름은 이 기기 안에만 둔다.
 import { connectNet } from './net.js';
 import * as S from './story.js';
-import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML } from './stage.js';
-import { ROOT, MAX_NUM, esc, parseJSON, devTag, CIRCLED, LS, REFL_Q, MAX_REFL, randInt } from './shared.js';
+import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
+import { initSound, setLocked, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
+import { moodOf, lineFx, emote, shake, techBurst, floatChips, confetti, emphasize, endingReveal, chapterOf, chapterCard, cardSkip, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
+import { ROOT, MAX_NUM, seatsOf, esc, parseJSON, devTag, CIRCLED, LS, REFL_Q, MAX_REFL, randInt } from './shared.js';
 
 const $ = s => document.querySelector(s);
 const main = $('#main');
@@ -18,6 +20,8 @@ const P = {
   err: '', screen: '', solo: null, reflSent: null, reflDraft: {},
 };
 window.__vnPlay = P; // 시험 · 점검용
+// 소리: 전체 모드 크롬북은 언제나 끔(잠금 · 단추도 숨김 — 소리는 큰 화면에서). 개인 모드는 처음엔 끔, 머리띠 단추로 켠다
+initSound({ page: 'solo', defaults: { bgm: false, sfx: false, bgmVol: 0.4, sfxVol: 0.5, track: 'm1', motion: 'lo' }, locked: true });   // 학생 기기: 소리 끔 · 움직임 「하」(교사 확정 10.30)
 
 function connect() {
   if (!P.netP) {
@@ -50,6 +54,8 @@ async function join(code, num, auto = false) {
     const net = await connect();
     const meta = await net.withTimeout(net.get(`${ROOT}/${code}/meta`), 10000, '방 찾기');
     if (!meta) { P.err = '그런 방이 없어요. 큰 화면의 방 코드를 다시 보세요'; if (auto) LS.del(LS_JOIN); return renderJoin(); }
+    const seats = seatsOf(meta);
+    if (num > seats) { P.err = `우리 반 번호는 1~${seats}번이에요. 번호를 다시 보세요`; P.code = code; if (auto) LS.del(LS_JOIN); return renderJoin(); }
     leave();
     P.code = code; P.num = num; P.kicked = null; P.ended = false;
     // 순서가 중요하다: ① 「끊김」으로 자리를 만들고 ② 끊김 처리를 건 뒤 ③ 「접속」으로 바꾼다
@@ -77,13 +83,14 @@ function leave() {
   P.offs = [];
   if (P.mineOff) { P.mineOff(); P.mineOff = null; }
   P.joined = false; P.meta = null; P.core = {}; P.inputKey = null; P.mine = null;
+  setLocked(true);
 }
 
 function subscribe() {
   const n = P.net, on = (p, cb) => P.offs.push(n.on(room(p), cb, () => {}));
   on('meta', v => {
     if (!v && P.joined) { P.ended = true; LS.del(LS_JOIN); n.onDisconnectCancel(myPath()).catch(() => {}); }
-    P.meta = v; render();
+    P.meta = v; setLocked(!(v && v.mode === 'solo')); render();
   });
   on('state/c', v => { P.core = parseJSON(v, {}) || {}; render(); });
   on('state/inputKey', v => {
@@ -120,8 +127,10 @@ function renderBar() {
     <span class="b-title">${emblemHTML()}<span>손잡이 동아리</span></span>
     ${P.joined ? `<span class="b-chip strong"><b class="num">${P.num}</b>번</span>` : ''}
     <span class="b-sp"></span>
+    ${P.joined ? soundSlot('bar') : ''}
     ${P.joined ? `<span class="b-conn ${P.connected ? 'ok' : 'bad'}"><i></i>${P.connected ? '연결됨' : '끊김 — 다시 연결 중'}</span>` : ''}
     ${P.net && P.net.uid ? `<span class="b-dev" title="같은 번호가 두 기기일 때 선생님이 이 글자로 구분해요">기기 ${devTag(P.net.uid)}</span>` : ''}`;
+  mountSoundSlots($('#bar'));
 }
 
 function setScreen(key, html) {
@@ -311,9 +320,11 @@ function sendProgress() {
 function renderSoloMode() {
   const ph = P.meta.phase;
   const s = P.solo;
+  const k = s && s.pos && s.pos.k;
+  music(ph === 'lobby' || k === 'gender' || k === 'name' ? 'open' : (ph !== 'play' || k === 'ending' || k === 'card' || k === 'done') ? 'end' : 'main');
   if (ph === 'lobby') {
     return setScreen('s-lobby', `<div class="pv-center"><div class="pv-eyebrow">연결됨 ✅ · 개인 모드</div><div class="pv-huge num">${P.num}번</div>
-      <div class="pv-big">선생님이 시작하면 열려요</div><p class="pv-sub">혼자 끝까지 가는 이야기예요. 소리는 없어요.</p></div>`);
+      <div class="pv-big">선생님이 시작하면 열려요</div><p class="pv-sub">혼자 끝까지 가는 이야기예요. 소리는 처음엔 꺼져 있어요 — 위쪽 🎵 · 🔊 로 켤 수 있어요(이어폰 추천).</p></div>`);
   }
   if (ph === 'stats' || ph === 'done') {
     if (!s.first) return setScreen('s-wait', `<div class="pv-center"><div class="pv-huge">📺</div><div class="pv-big">선생님 화면을 보세요</div><p class="pv-sub">반 엔딩 통계를 함께 봐요.</p></div>`);
@@ -385,18 +396,37 @@ function renderSoloScene() {
   const cont = soloBox();
   P.screen = key;
   const cast = isEnd && cg ? [] : (n.cast || []);
-  renderStage(cont, {
-    bg, tint: n.tint, cg, cast, speaker: last && last.role, run,
+  const rebuilt = renderStage(cont, {
+    bg, tint: n.tint, cg, cast, speaker: last && last.role, run, when: n.when, romance: !!n.rel,
     chip: isEnd ? `졸업식 · ${n.name}` : chipOf(n), hud: st, delta: fx, notes,
     overlay: fx ? fxHTML(fx, cast, run) : '',
-    boxHTML: boxHTML(lines, shown, { footer: `<div class="vn-next">
+    boxHTML: boxHTML(lines, shown, { ...(isEnd && cg ? { keep: 3, cls: 'cg-box', head: cgHead(n) } : {}), footer: `<div class="vn-next">
       ${seen && s.runNo > 1 ? '<button class="btn ghost small" id="bSkip">⏩ 읽은 장면 넘기기</button>' : ''}
       <button class="btn" id="bNext">${shown < lines.length ? '다음 ▶' : (pos.k === 'ending' ? '졸업식 카드 ▶' : '계속 ▶')}</button></div>` }),
   });
-  $('#bNext').onclick = soloNext;
+  $('#bNext').onclick = e => soloAdvance('button', e);
   $('#bNext').focus({ preventScroll: true });
-  const sk = $('#bSkip'); if (sk) sk.onclick = () => { pos.i = lines.length; soloNext(); };
-  cont.querySelector('.vn-scene').onclick = soloNext;
+  const sk = $('#bSkip'); if (sk) sk.onclick = () => { twFinish(); pos.i = lines.length; soloNext(); };
+  // 소리 · 효과
+  if (!isEnd) music('main', moodOf(pos.id, n, pos.k, opt));
+  const lf = lineFx(last, !!(n.rel || n.slot));
+  let card = null;
+  if (isEnd && shown === 1) endingReveal(cont);
+  else if (pos.k === 'scene' && shown === 1) {   // 장면 첫 줄: 학년 · 철이 바뀌면 장 제목 카드(대사 상자 자리)
+    const ch = chapterOf(n.when), key = ch.key;
+    if (key && key !== P.lastChapter) { card = chapterCard(cont, n.when, n.title, !!ch.grade && ch.grade !== P.lastGrade); P.lastChapter = key; P.lastGrade = ch.grade; }
+    else sfx('whoosh');
+  } else sfx(rebuilt ? 'whoosh' : 'tick');
+  // 장 제목 카드가 대사 자리를 잠깐 차지하는 동안 첫 줄은 숨겨 두고(CSS), 카드가 사라지면 그때 글자를 찍는다
+  clearInterval(P.cardWait); P.cardWait = null;
+  if (card) P.cardWait = setInterval(() => { if (card.isConnected) return; clearInterval(P.cardWait); P.cardWait = null; typewrite(cont, { key: lf.key }); }, 100);
+  else typewrite(cont, { key: lf.key });
+  emphasize(cont, lf);
+  if (lf.shake) shake(cont);
+  if (lf.tech) techBurst(cont, lf.water);
+  if (lf.emote && last && last.role) emote(cont, last.role, lf.emote);
+  if (fx && shown === 1) { floatChips(cont, fx, S.SHOWN); if (notes.length) setTimeout(() => sfx('note'), 380); }
+  hintOnce('vn.hint.solo', '화면을 눌러도 다음으로 넘어가요 (스페이스 · Enter)');
   preload(artFor(S.NODES[S.nextOf(pos.id, run) || ''] || null, run));
 }
 
@@ -415,6 +445,28 @@ function fxHTML(fx, cast = [], run = {}) {
   if (!parts.length) return '';
   return `<div class="vn-fx" role="status">${parts.join('')}</div>`;
 }
+
+/** 다음으로: 글자를 찍는 중이면 먼저 다 보여 주고, 다음 누름에 넘긴다. 진짜 두 번 누르기(빠른 연타)는 한 번만 */
+let lastAdv = 0;
+function soloAdvance(src, e) {
+  if (e && (e.repeat || e.detail > 1)) return;
+  const t = performance.now();
+  if (e && e.isTrusted && t - lastAdv < 250) return;   // 손가락 · 키 연타(250ms 안)는 한 번만
+  lastAdv = t;
+  const card = cardSkip(main);                   // 장 제목 카드가 떠 있으면 닫고 같은 누름에 첫 줄을 다 보여 준다(찍기 없이)
+  if (P.cardWait) { clearInterval(P.cardWait); P.cardWait = null; return; }
+  if (twBusy()) { twFinish(); return; }
+  if (card) return;
+  soloNext();
+}
+main.addEventListener('click', e => {
+  if (!P.solo || !P.meta || P.meta.mode !== 'solo' || P.meta.phase !== 'play') return;
+  const k = P.solo.pos && P.solo.pos.k;
+  if (!['scene', 'after', 'ending'].includes(k)) return;      // 갈림길 · 카드 · 성찰에서는 넘기지 않는다
+  if (!e.target.closest || !e.target.closest('.solo')) return;
+  if (!isAdvanceClick(e)) return;
+  soloAdvance('click', e);
+});
 
 function soloNext() {
   const s = P.solo, pos = s.pos, run = s.run;
@@ -446,8 +498,9 @@ function renderSoloChoice() {
       <h2 class="vote-q">${esc(n.q)}</h2>
       <div class="vote-opts n${labels.length}">${labels.map((l, i) => `<button class="vbtn" data-c="${i + 1}"><span class="vb-n">${CIRCLED[i + 1]}</span><span class="vb-t">${esc(l)}</span></button>`).join('')}</div>
     </div>` });
-  const sc = main.querySelector('.vn-scene'); if (sc) sc.onclick = null;
-  main.querySelectorAll('[data-c]').forEach(b => { b.onclick = () => pick(Number(b.dataset.c)); });
+  music('main', moodOf(pos.id, n));
+  sfx('slide');
+  main.querySelectorAll('[data-c]').forEach(b => { b.onclick = () => { sfx('select'); pick(Number(b.dataset.c)); }; b.onpointerenter = () => sfx('hover'); });
   main.querySelector('[data-c]').focus({ preventScroll: true });
 }
 
@@ -488,6 +541,7 @@ function renderSoloCard() {
     <div class="pv-row"><button class="btn big" id="bDone">${s.runNo === 1 ? '생각 정리하러 가기 ▶' : '엔딩 도감 ▶'}</button></div>
   </div>`)) return;
   $('#bDone').onclick = () => { s.pos = { k: 'done' }; saveSolo(); P.screen = ''; render(); };
+  sfx('reveal'); confetti(main.querySelector('.ec-head'), 30, { paper: true });
 }
 
 function dexHTML(dex) {
@@ -543,8 +597,10 @@ function toast(msg) {
 document.addEventListener('keydown', e => {
   if (!P.solo || !P.meta || P.meta.mode !== 'solo') return;
   const k = P.solo.pos.k;
-  if ((k === 'scene' || k === 'after' || k === 'ending') && (e.key === ' ' || e.key === 'Enter') && !/TEXTAREA|INPUT/.test(document.activeElement.tagName)) {
-    e.preventDefault(); soloNext();
+  const ae = document.activeElement;
+  if ((k === 'scene' || k === 'after' || k === 'ending') && (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') && !/TEXTAREA|INPUT|SELECT/.test(ae.tagName)
+      && (ae.id === 'bNext' || !ae.closest('button, a, [role="button"]'))) {
+    e.preventDefault(); soloAdvance('key', e);
   }
 });
 

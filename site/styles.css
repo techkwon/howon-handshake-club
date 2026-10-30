@@ -570,10 +570,7 @@ body.play #main:has(.solo){padding:8px}
   .ts-splash .logo{max-width:none}
   .ts-splash .sp-press{align-self:center}
 }
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation:none!important;transition:none!important}
-  .petals{display:none}
-}
+/* 움직임 줄이기는 <html data-motion="off"> 로(맨 아래 「움직임 최대」 절) — 컴퓨터 설정은 처음 값만 정하고, 교사가 올릴 수 있다 */
 .ec-stats{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:clamp(16px,1.25vw,24px)}
 .ec-stats span{display:inline-flex;align-items:center;gap:4px}
 .ec-stats .st-ic{width:1.6em;height:1.6em}
@@ -638,3 +635,302 @@ body.play #main:has(.solo){padding:8px}
 .endcard.host .ptable td{padding:7px 6px}
 .endcard.host .ptable .pt-how{font-size:.72em;vertical-align:middle}
 .endcard.host .ptable .pt-other{font-size:.72em;vertical-align:middle}
+
+/* ── 소리 조절(🎵 음악 · 곡 1 · 2 · 3 · 🔊 효과음 · 크기) 2026-10-30 ─────────────── */
+.snd-slot{display:contents}
+.snd{display:inline-flex;align-items:center;gap:5px;padding:2px 6px;border-radius:99px;background:rgba(230,218,196,.45);flex:none}
+.snd-b{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;padding:5px 10px;border-radius:99px;border:1.5px solid var(--rule);background:var(--card);cursor:pointer;color:var(--dim)}
+.snd-b.on{border-color:var(--gold);background:var(--gold-w);color:var(--gold-t)}
+.snd-b:not(.on) .snd-l{text-decoration:line-through;text-decoration-thickness:1.5px}
+.snd-l{font-size:13px}
+.snd-tr{display:inline-flex;gap:2px}
+.snd-n{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--rule);background:var(--card);font-weight:800;font-size:14px;cursor:pointer;color:var(--dim);padding:0}
+.snd-n.on{border-color:var(--rose);background:var(--rose-w);color:var(--rose-t);box-shadow:0 0 0 1.5px var(--rose)}
+.snd-vol{width:84px;accent-color:var(--gold)}
+.ts-foot .snd{background:rgba(255,252,245,.92);box-shadow:0 1px 4px rgba(74,44,28,.18);text-shadow:none}
+@media (max-width:1100px){ #bar .snd-l{display:none} #bar .snd-vol{width:60px} }
+@media (max-width:760px){ #bar .snd-tr,#bar .snd-vol{display:none} .ts-foot .snd-l{display:none} }
+
+/* ── 학생 수 고르기 ──────────────────────────────────────────────── */
+.seats{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.seat-b{width:52px;height:52px;border-radius:50%;border:2px solid var(--gold);background:linear-gradient(180deg,#fff7e2,#fbe8c6);font-size:30px;font-weight:900;line-height:1;color:var(--gold-t);cursor:pointer;padding:0}
+.seat-b:disabled{opacity:.4;cursor:default}
+.seat-n{display:inline-flex;align-items:baseline;gap:4px;font-weight:800;font-size:18px}
+.seat-n input{width:2.4em;font-size:34px;font-weight:900;text-align:center;border:2px solid var(--rule);border-radius:12px;background:var(--card);padding:0 2px;-moz-appearance:textfield;appearance:textfield}
+.seat-n input::-webkit-inner-spin-button,.seat-n input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.seat-q{display:inline-flex;flex-wrap:wrap;gap:6px}
+.seat-q .segb{min-width:48px;padding:6px 10px}
+.seat-q .segb.on::before{content:none}
+
+/* ── 장면 넘김 ──────────────────────────────────────────────────── */
+.vn-stage.tr-fade .vn-scene{animation:fadein .6s ease both}
+.vn-stage.tr-wipe .vn-scene{animation:wipe .75s var(--ease) both}
+.vn-stage.tr-page .vn-scene{animation:pageturn .95s var(--ease) both}
+@keyframes wipe{from{clip-path:inset(0 100% 0 0);filter:brightness(1.15)}to{clip-path:inset(0 0 0 0);filter:none}}
+@keyframes pageturn{0%{clip-path:polygon(100% 0,100% 0,85% 100%,100% 100%);filter:brightness(1.2)}60%{filter:brightness(1.05)}100%{clip-path:polygon(0 0,100% 0,100% 100%,-20% 100%);filter:none}}
+
+/* 인물 들어오기(살짝 튀어 오름) · 말할 차례 깡충 · 대사 얼굴 톡 */
+.vn-actor{animation:actorin .55s var(--ease) both}
+.vn-actor:nth-child(2){animation-delay:.08s}.vn-actor:nth-child(3){animation-delay:.16s}.vn-actor:nth-child(4){animation-delay:.24s}
+@keyframes actorin{0%{opacity:0;transform:translateY(22px) scale(.97)}65%{opacity:1;transform:translateY(-5px)}100%{opacity:1;transform:none}}
+.vn-actor.hop .vn-sprite{animation:hop .42s var(--ease)}
+@keyframes hop{0%,100%{transform:none}40%{transform:translateY(-2.2%)}}
+.vn-line.new .vn-face{animation:facepop .38s var(--ease) both}
+@keyframes facepop{0%{transform:scale(.6)}60%{transform:scale(1.12)}100%{transform:none}}
+
+/* 날씨 캔버스 · 빛 터짐: 배경과 인물 사이(인물이 늘 위) */
+.vn-wx{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.vn-bloom{position:absolute;left:50%;top:46%;width:70vmin;height:70vmin;margin:-35vmin 0 0 -35vmin;z-index:0;pointer-events:none;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,244,190,.95) 0%,rgba(255,214,120,.55) 30%,rgba(255,214,120,0) 68%);mix-blend-mode:screen;animation:bloom 1.7s ease-out both}
+@keyframes bloom{0%{opacity:0;transform:scale(.2)}25%{opacity:1}100%{opacity:0;transform:scale(1.5)}}
+.vn-scene.shake{animation:shake .45s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+
+/* 감정 표시 · ♪: 머리 옆(그림 오른쪽 바깥 — 얼굴 상자 가로 15~85% 밖) */
+.vn-emote,.vn-note{position:absolute;left:89%;right:auto;top:15%;z-index:2;pointer-events:none}
+.vn-emote{font-size:clamp(20px,2.3vw,42px);line-height:1;filter:drop-shadow(0 2px 3px rgba(60,32,18,.35));animation:emote 2.2s var(--ease) both}
+.vn-emote.e-sweat{top:20%}
+.vn-note{top:2%;font-size:clamp(18px,2vw,36px);width:1.5em;height:1.5em}
+@keyframes emote{0%{opacity:0;transform:translateY(8px) scale(.5)}15%{opacity:1;transform:translateY(0) scale(1.15)}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
+
+/* 지표 꼬리표: 지표 줄 자리에서 톡 튀어나와 위로 사라진다(지표 줄과 같은 칸 — 얼굴 쪽으로 내려가지 않음) */
+.fx-chips{position:absolute;top:12px;right:12px;display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:flex-end;align-items:flex-start;gap:6px;white-space:nowrap;z-index:3;pointer-events:none;font-size:clamp(14px,1.2vw,22px)}   /* 자리는 fx.js 가 고른다(지표 왼쪽 같은 줄 → 지표 밑) */
+.fx-chip{font-weight:900;color:var(--grn-t);background:#fffdf6;border:2px solid var(--grn);border-radius:99px;padding:2px 12px;box-shadow:0 3px 10px rgba(60,32,18,.25);
+  animation:chipup 2.4s var(--ease) both;animation-delay:calc(var(--i) * .15s)}
+@keyframes chipup{0%{opacity:0;transform:translateY(-6px) scale(.6)}18%{opacity:1;transform:scale(1.04)}30%{transform:none}75%{opacity:1;transform:none}100%{opacity:0;transform:translateY(6px)}}   /* 지표에서 톡 나와 아래로 스르륵(지표 쪽으로 올라가 덮지 않게) */
+.fx-chips.up .fx-chip{animation-name:chipdn}
+.fx-chips.col{flex-direction:column;align-items:flex-end;gap:5px}
+@keyframes chipdn{0%{opacity:0;transform:translateY(6px) scale(.6)}18%{opacity:1;transform:scale(1.04)}30%{transform:none}75%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6px)}}
+
+/* 꽃가루 · 종이 조각(정해진 칸 안에서만 떨어짐 · 넘치면 잘림) */
+.fx-conf{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:5;container-type:size}
+.vn-box>.fx-conf{position:absolute}
+.fx-conf i{position:absolute;left:var(--x);top:-16px;opacity:0;animation:conf var(--d) ease-in var(--dl) both}
+.fx-conf .cf-p{width:12px;height:9px;border-radius:70% 0 70% 0;background:var(--c)}
+.fx-conf .cf-s{width:7px;height:11px;border-radius:2px;background:var(--c)}
+@keyframes conf{0%{opacity:0;transform:translate(0,0) rotate(var(--r))}8%{opacity:.9}85%{opacity:.8}100%{opacity:0;transform:translate(var(--sw),calc(100cqh + 40px)) rotate(calc(var(--r) + 540deg))}}
+.vn-stage.has-cg>.fx-conf{grid-column:2;grid-row:1}
+.ec-head{position:relative;overflow:hidden}
+
+/* 투표: 막대가 차오르고, 이긴 줄에서 반짝 */
+.ov-vote.tally .vo-bar i{animation:barin .9s var(--ease) both}
+@keyframes barin{from{width:0}}
+.fx-burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:2}
+.fx-burst i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,#fff6c8,#f6b8c4 60%,transparent 70%);
+  animation:burst 1.1s var(--ease) var(--dl) both}
+@keyframes burst{0%{opacity:1;transform:rotate(var(--a)) translateX(0) scale(.6)}100%{opacity:0;transform:rotate(var(--a)) translateX(min(22vw,320px)) scale(1.4)}}
+
+/* 글자 찍기: 아직 안 나온 글자는 자리만 차지(줄이 흔들리지 않게) */
+.tw-h{color:transparent}
+
+/* 「눌러도 넘어가요」 안내(한 번) */
+.adv-hint{position:fixed;left:50%;bottom:calc(18px + 3.2em);transform:translateX(-50%);z-index:40;pointer-events:none;background:rgba(46,36,32,.88);color:#fff8ee;
+  font-weight:800;font-size:clamp(15px,1.2vw,22px);padding:8px 18px;border-radius:99px;border:1.5px solid var(--gold-l);animation:fadein .4s both;transition:opacity .7s;white-space:nowrap;max-width:calc(100vw - 32px)}
+.adv-hint.out{opacity:0}
+
+/* ── 엔딩 장면: 그림은 크게 다 보이고, 글은 큰 글씨 · 진한 종이 칸 ─────────────── */
+.vn-stage.has-cg{grid-template-columns:minmax(0,1fr) clamp(320px,38%,760px)}
+.vn-stage.has-cg .vn-scene{overflow:hidden}
+.vn-stage.has-cg .vn-bg{transform-origin:50% 70%}
+@keyframes panelin{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.vn-box.cg-box{justify-content:flex-start;gap:clamp(8px,1.4vh,18px);padding:0 6px;overflow:hidden auto;scrollbar-width:thin}
+.cg-head{display:flex;flex-direction:column;gap:2px;padding-bottom:clamp(6px,1.2vh,14px);border-bottom:2px solid var(--gold-l);margin-bottom:2px}
+.cg-k{font-size:clamp(14px,1.05vw,22px);font-weight:800;color:var(--rose-t)}
+.cg-name{font-family:var(--f-display);font-size:clamp(22px,2.1vw,44px);font-weight:700;line-height:1.25;color:#3a1c24}
+.cg-box .vn-line{flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:clamp(22px,2vw,42px);line-height:1.6;color:#241b16;padding-left:16px}
+.cg-box .vn-line .vn-text{flex-basis:100%}
+.cg-box .vn-line .vn-face{width:2em;height:2em}
+.cg-box .vn-line.old{font-size:clamp(21px,1.7vw,34px);color:#3f332a;font-weight:600}
+.cg-box .vn-line.new{font-weight:700}
+.cg-box .vn-line.new:last-child::after,.cg-box .vn-line.new:last-of-type::after{position:absolute;right:0;bottom:.2em}
+.cg-box .vn-next{margin-top:auto}
+/* 4:3 · 세로에 가까운 화면: 그림 위 · 글 아래 */
+@media (max-aspect-ratio:3/2) and (min-width:761px){
+  .vn-stage.has-cg{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,58%) minmax(0,1fr)}
+  .vn-stage.has-cg>.fx-conf{grid-column:1;grid-row:2}
+  .vn-stage.has-cg .vn-box{border-width:clamp(22px,3vw,40px) clamp(26px,3.4vw,46px);border-image-width:clamp(22px,3vw,40px) clamp(26px,3.4vw,46px)}
+  .cg-box .vn-line{font-size:clamp(20px,2.5vw,38px)}
+  .cg-box .vn-line.old{font-size:clamp(21px,2.2vw,30px)}
+  .cg-head{flex-direction:row;align-items:baseline;gap:12px}
+}
+@media (max-width:760px){
+  .vn-stage.has-cg>.fx-conf{top:auto;height:52%}
+  .cg-box .vn-line{font-size:19px}
+  .cg-box .vn-line.old{font-size:15px}
+  .cg-name{font-size:21px}
+}
+
+
+.cg-box .vn-line.new{padding-right:1.3em}
+@media (max-width:760px){ .fx-chips{top:auto;bottom:8px;font-size:13px} }
+.paused-tag{top:auto;bottom:calc(2% + 4px);left:50%;transform:translateX(-50%);font-size:14px;padding:3px 14px;white-space:nowrap;pointer-events:none}   /* 멈춤 표시: 대사 상자 아래 테두리 위(얼굴 쪽 위 칸에 두지 않는다) */
+
+.vn-box>.fx-conf{z-index:0}   /* 엔딩 글 칸: 꽃가루는 종이 위 · 글자 아래 */
+.hp-stage:has(.has-cg)+.hp-extra .paused-tag{left:auto;right:2.5%;transform:none}   /* 엔딩: 멈춤 표시는 글 칸 쪽(그림 위에 두지 않음) */
+@media (max-width:420px){ body.play #bar:has(.snd) .b-title>span{display:none} body.play #bar .snd{padding:2px 3px} body.play #bar .snd-b{padding:4px 8px} }   /* 휴대 전화: 소리 단추가 생기면 앱 이름 글자를 숨겨 연결 · 기기 글자가 잘리지 않게 */
+@media (max-width:1899px){ body.host #bar .snd-l{display:none} body.host #bar .snd-vol{width:56px} body.host #bar{gap:8px} }
+.snd-b:not(.on){opacity:.75}
+.snd-b:not(.on)::after{content:'✕';font-size:11px;font-weight:900;color:var(--bad);margin-left:-2px}
+.snd-b.gear:not(.on){opacity:1} .snd-b.gear::after{content:none}   /* ⚙ 는 켜고 끄는 단추가 아니라 ✕ 표시 없음 */
+/* 진행판 머리띠가 좁으면(소리 단추가 생겨서) 덜 중요한 글부터 줄인다 — 「수업 끝」은 늘 화면 안 */
+@media (max-width:1500px){ body.host #bar .b-title>span{display:none} body.host #bar .b-chip.mode{display:none} body.host #bar .b-btn{padding:6px 10px} body.host #bar .b-pace{gap:2px} }
+@media (min-width:1600px) and (max-width:1759px){ body.host #bar .b-title>span{display:none} body.host #bar .b-chip.mode{display:none} }   /* 큰 글씨가 켜지는 1600 바로 위 */
+@media (max-width:1300px){ body.host #bar .snd-vol{display:none} body.host #bar .b-conn{font-size:0;gap:0} body.host #bar{gap:6px;padding:0 8px} }
+
+/* 학생이 많으면(31~60 · 61~99) 대기실 번호 칸을 촘촘하게 — 넘치면 칸 안에서 스크롤 */
+.numgrid.many{grid-template-columns:repeat(8,1fr);gap:6px}
+.numgrid.lots{grid-template-columns:repeat(10,1fr);gap:4px}
+.numgrid.many .ng{padding:4px 0;font-size:clamp(15px,1.15vw,24px);border-radius:9px}
+.numgrid.lots .ng{padding:3px 0;font-size:clamp(13px,.95vw,20px);border-radius:7px;border-width:1.5px}
+.numgrid.many .ng i,.numgrid.lots .ng i{display:none}
+.lobby-r:has(.numgrid.many),.lobby-r:has(.numgrid.lots){max-height:100%;overflow:auto}
+@media (max-width:760px){ .numgrid.many{grid-template-columns:repeat(6,1fr)} .numgrid.lots{grid-template-columns:repeat(8,1fr)} }
+
+/* ══ 움직임 최대(2026-10-30) — 단계는 <html data-motion="hi|mid|lo|off"> ═══════════════════════
+   hi 상: 전부 · mid 중: 알갱이 절반 · 흔들림 · 카메라 없음 · 숨쉬기 작게 · lo 하: 나타나기 · 밀려오기만 · off 끄기: 움직임 없음 */
+
+/* ── ⚙ 설정 판: 머리띠 아래 한 줄(화면을 밀어 내림 — 무대 위를 덮지 않음) ── */
+body.set-open{grid-template-rows:52px auto minmax(0,1fr)}
+body.at-title.set-open{grid-template-rows:0 auto minmax(0,1fr)}
+.setp{background:rgba(255,252,245,.97) var(--img-paper);border-bottom:2px solid var(--gold-l);box-shadow:0 6px 14px rgba(74,44,28,.12);padding:8px 14px;position:relative;z-index:3}
+.sp-in{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px}
+.sp-g{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.sp-g>b{font-size:15px;color:var(--gold-t)}
+.sp-sw,.sp-trb,.sp-mob,.sp-x{font-size:14px;font-weight:700;padding:5px 12px;border-radius:99px;border:1.5px solid var(--rule);background:var(--card);cursor:pointer;color:var(--dim)}
+.sp-sw.on,.sp-trb.on,.sp-mob.on{border-color:var(--gold);background:var(--gold-w);color:var(--gold-t);box-shadow:0 0 0 1.5px var(--gold)}
+.sp-tr,.sp-mo{display:inline-flex;flex-wrap:wrap;gap:4px}
+.sp-mob{min-width:46px}
+.sp-vol{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--dim)}
+.sp-vol input{width:110px;accent-color:var(--gold)}
+.sp-x{margin-left:auto}
+.sp-md{min-width:12em}
+.snd-b.gear{font-size:16px}
+body.at-title .setp{background:rgba(255,252,245,.95)}
+
+/* ── 말하는 사람 강조 · 숨쉬기 · 흔들림(인물 그림만 · 얼굴 상자도 같이 움직여 검사가 따라간다) ── */
+.vn-actor{transition:filter .35s ease,scale .35s var(--ease),translate .35s var(--ease)}
+.vn-actor.speak{transform:none;filter:brightness(1.05) saturate(1.05);scale:1.02;z-index:2}
+.vn-actor.dim{filter:brightness(.85) saturate(.82);scale:.98;translate:0 1%}
+.vn-sprite{transform-origin:50% 100%}
+html[data-motion="hi"] .vn-sprite{animation:breathe 4.2s ease-in-out var(--ph,0s) infinite,sway 7.5s ease-in-out var(--ph,0s) infinite}
+html[data-motion="hi"] .vn-actor.hop .vn-sprite{animation:hop .42s var(--ease),breathe 4.2s ease-in-out var(--ph,0s) infinite,sway 7.5s ease-in-out var(--ph,0s) infinite}
+html[data-motion="mid"] .vn-sprite{animation:breathe 4.2s ease-in-out var(--ph,0s) infinite}
+html[data-motion="mid"] .vn-actor.hop .vn-sprite{animation:hop .42s var(--ease),breathe 4.2s ease-in-out var(--ph,0s) infinite}
+@keyframes breathe{0%,100%{scale:1}50%{scale:1.01 1.012}}
+@keyframes sway{0%,100%{rotate:0deg}50%{rotate:calc(var(--sw,1) * .5deg)}}
+html[data-motion="lo"] .vn-actor.speak,html[data-motion="lo"] .vn-actor.dim,html[data-motion="off"] .vn-actor.speak,html[data-motion="off"] .vn-actor.dim{scale:none;translate:none}
+
+/* ── 배경 천천히 밀고 당기기(켄 번스) · 인물과 다른 빠르기(시차) ── */
+html[data-motion="hi"] .vn-stage:not(.has-cg) .vn-bg{animation:bgin var(--d3) ease both,kb 26s ease-in-out .7s infinite alternate}
+html[data-motion="hi"] .vn-cast{animation:castdrift 26s ease-in-out .7s infinite alternate}
+html[data-motion="mid"] .vn-stage:not(.has-cg) .vn-bg{animation:bgin var(--d3) ease both,kbs 30s ease-in-out .7s infinite alternate}
+@keyframes kb{from{transform:scale(1.03) translate(0,0)}to{transform:scale(1.08) translate(-1.4%,-.8%)}}
+@keyframes kbs{from{transform:scale(1.02)}to{transform:scale(1.04) translate(-.6%,0)}}
+@keyframes castdrift{from{translate:0 0}to{translate:.8% 0}}
+
+/* ── 카메라 살짝 밀기(기술이 켜질 때 · 상) · 반짝 길(맨 위 띠 → 💡 지표) ── */
+.vn-scene.pushin{animation:pushin .95s var(--ease) both}
+@keyframes pushin{0%{transform:none}40%{transform:scale(1.035)}100%{transform:none}}
+.fx-trail{position:absolute;left:0;right:0;top:4px;height:28px;z-index:3;pointer-events:none;overflow:hidden}
+.fx-trail i{position:absolute;left:50%;top:10px;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle,#fffbe0,#ffd56a 55%,transparent 70%);
+  animation:trail 1.3s var(--ease) calc(var(--i) * .06s) both}
+@keyframes trail{0%{opacity:0;transform:translateX(0) scale(.5)}20%{opacity:1}100%{opacity:0;transform:translateX(calc(50vw - 160px)) scale(1.2)}}
+
+/* ── 장 제목 카드: 붓 띠가 쓱 들어와 머물다 쓱 나간다 ── */
+.ov-title{animation:none;background:none}
+.fc-band{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:.45em 2.4em .55em;color:#fffaf2;text-shadow:0 2px 4px rgba(90,30,40,.5);
+  background:linear-gradient(100deg,transparent 0,#b84a5e 6%,#c9586a 30%,#b8475b 70%,#a63e52 94%,transparent 100%);
+  clip-path:polygon(2% 18%,8% 4%,30% 9%,55% 2%,78% 8%,97% 3%,99% 40%,96% 88%,72% 96%,48% 90%,24% 98%,4% 92%,1% 60%)}
+.ov-title .fc-band .ov-when{font-size:clamp(16px,1.5vw,30px);font-weight:800;opacity:.92;color:#fff3df}
+.ov-title .fc-band .ov-name{font-family:var(--f-display);font-size:clamp(30px,3.4vw,68px);font-weight:700;color:#fffaf2}
+.ov-title.big .fc-band .ov-when{font-size:clamp(26px,2.8vw,56px)}
+html:not([data-motion="off"]) .ov-title .fc-band{animation:brushin .55s cubic-bezier(.2,.8,.2,1) both,brushout .45s ease-in 2.6s forwards}
+html[data-motion="lo"] .ov-title .fc-band{animation:fadein .4s ease both}
+@keyframes brushin{from{clip-path:polygon(0 18%,0 4%,0 9%,0 2%,0 8%,0 3%,0 40%,0 88%,0 96%,0 90%,0 98%,0 92%,0 60%)}}
+@keyframes brushout{to{opacity:0;transform:translateX(6%)}}
+.fx-card{position:absolute;left:0;right:0;bottom:3%;z-index:6;display:flex;justify-content:center;pointer-events:none}
+.vn-stage:has(> .fx-card) .vn-box:not(.choice) > .vn-line.new{visibility:hidden}
+.host-play:has(.paused-tag) .fx-card{bottom:calc(2% + 44px)}   /* 진행판 멈춤 표시(대사 상자 아래 테두리)와 겹치지 않게 그 위로 — fx.js 가 한 번 더 재서 비킨다 */   /* 카드가 떠 있는 동안 밑의 첫 줄은 숨김(카드가 걷히면 그때 찍힘) */
+.fx-card .fc-band{font-size:clamp(15px,1.4vw,26px)}
+.fx-card .fc-when{font-weight:800}
+.fx-card .fc-title{font-family:var(--f-display);font-size:1.5em}
+.fx-card.big .fc-when{font-size:1.4em}
+html[data-motion="hi"] .fx-card .fc-band,html[data-motion="mid"] .fx-card .fc-band{animation:brushin .5s cubic-bezier(.2,.8,.2,1) both,brushout .4s ease-in 1.75s forwards}
+html[data-motion="lo"] .fx-card .fc-band{animation:fadein .3s ease both}
+
+/* ── 글 강조: 느낌표 톡 · 속마음 스르륵 기울임 · 기술 낱말 반짝 ── */
+html[data-motion="hi"] .vn-line.new.ex .vn-text,html[data-motion="mid"] .vn-line.new.ex .vn-text{display:inline-block;animation:expop .42s var(--ease) both}
+@keyframes expop{0%{transform:scale(.94)}35%{transform:scale(1.04) rotate(-.6deg)}55%{transform:scale(.99) rotate(.4deg)}100%{transform:none}}
+.vn-line.new.whisper{font-style:italic;color:#5b4a62;font-weight:500}
+html:not([data-motion="off"]) .vn-line.new.whisper{animation:whisper .9s ease both}
+@keyframes whisper{from{opacity:0;filter:blur(2px);letter-spacing:.06em}to{opacity:1;filter:none;letter-spacing:normal}}
+mark.kw{background:linear-gradient(100deg,transparent 0%,rgba(255,214,120,.55) 45%,rgba(255,240,190,.9) 50%,rgba(255,214,120,.55) 55%,transparent 100%) 0 0/250% 100% no-repeat;color:inherit;border-radius:4px;padding:0 .08em;box-shadow:inset 0 -.35em 0 rgba(255,214,120,.35)}
+html[data-motion="hi"] mark.kw,html[data-motion="mid"] mark.kw{animation:kw 1.4s ease-out both}
+@keyframes kw{from{background-position:120% 0}to{background-position:-30% 0}}
+
+/* ── 투표 · 선택 연출 ── */
+html:not([data-motion="off"]) .ov-vote .vo-row,html:not([data-motion="off"]) .vote-opts .vbtn{animation:slidein .5s var(--ease) both}
+.vo-row:nth-child(2),.vote-opts .vbtn:nth-child(2){animation-delay:.08s!important}
+.vo-row:nth-child(3),.vote-opts .vbtn:nth-child(3){animation-delay:.16s!important}
+.vo-row:nth-child(4),.vote-opts .vbtn:nth-child(4){animation-delay:.24s!important}
+@keyframes slidein{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+html[data-motion="lo"] .ov-vote .vo-row,html[data-motion="lo"] .vote-opts .vbtn{animation-name:fadein}
+.vbtn{transition:translate .25s var(--ease),box-shadow .25s,filter .25s}
+html:not([data-motion="off"]):not([data-motion="lo"]) .vbtn:not(:disabled):hover,html:not([data-motion="off"]):not([data-motion="lo"]) .vbtn.on{translate:0 -3px}
+.vbtn:not(:disabled):hover,.vbtn.on{box-shadow:0 0 0 2px var(--gold),0 0 18px rgba(255,200,120,.75)}
+/* 남은 시간 고리(--p: 남은 몫) · 마지막 3초는 빨갛게 두근 + 무대 둘레 그림자(투표판 위엔 인물이 없다) */
+.vo-timer{position:relative;display:inline-grid;place-items:center;min-width:2.6em;height:2.6em;border-radius:50%;
+  background:conic-gradient(var(--gold) calc(var(--p,1) * 360deg),rgba(201,150,63,.18) 0);padding:4px}
+.vo-timer::before{content:'';position:absolute;inset:5px;border-radius:50%;background:#fffaf0;z-index:-1}
+.vo-timer{isolation:isolate}
+.ov-vote.last3 .vo-timer{background:conic-gradient(#d43d3d calc(var(--p,1) * 360deg),rgba(212,61,61,.18) 0);color:#b3261e}
+html:not([data-motion="off"]) .ov-vote.last3 .vo-timer{animation:beat 1s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.14)}30%{transform:scale(1)}45%{transform:scale(1.08)}}
+.hp-stage:has(.ov-vote.last3) .vn-scene::after{box-shadow:inset 0 0 110px rgba(200,40,40,.45)}
+html:not([data-motion="off"]) .hp-stage:has(.ov-vote.last3) .vn-scene::after{animation:vig 1s ease-in-out infinite}
+@keyframes vig{0%,100%{opacity:.6}50%{opacity:1}}
+/* 결과 막대: 차례로(북 굴림) · 이긴 줄 도장 */
+.ov-vote.tally .vo-row:nth-child(2) .vo-bar i{animation-delay:.18s}
+.ov-vote.tally .vo-row:nth-child(3) .vo-bar i{animation-delay:.36s}
+.ov-vote.tally .vo-row:nth-child(4) .vo-bar i{animation-delay:.54s}
+.vo-row.stamped .vo-win{animation:stamp .45s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes stamp{from{transform:scale(2.4) rotate(-14deg);opacity:0}to{transform:rotate(-4deg);opacity:1}}
+
+/* ── 설렘(연애 장면): 분홍 둘레 · ♡ 는 머리 옆 ── */
+.vn-stage.romance .vn-scene::after{background:radial-gradient(120% 90% at 50% 40%,transparent 58%,rgba(244,150,175,.32))}
+.vn-emote.e-heart{color:#e2607d;font-weight:900;text-shadow:0 0 8px rgba(255,190,210,.95)}
+
+/* ── 엔딩: 그림이 살짝 크게 시작해 다 보이는 크기로(줌아웃) · 빛 번짐 · 글 칸은 그림이 자리 잡은 뒤 ── */
+html[data-motion="hi"] .vn-stage.has-cg .vn-bg,html[data-motion="mid"] .vn-stage.has-cg .vn-bg{animation:cgin 1.4s ease both,cgout 3.4s cubic-bezier(.2,.7,.2,1) both}
+@keyframes cgout{from{transform:scale(1.08)}to{transform:none}}
+@keyframes cgin{0%{opacity:0;filter:brightness(1.6) saturate(.6) sepia(.25)}55%{opacity:1;filter:brightness(1.18) sepia(.15)}100%{opacity:1;filter:none}}
+html[data-motion="lo"] .vn-stage.has-cg .vn-bg{animation:fadein .6s ease both}
+html[data-motion="hi"] .vn-stage.has-cg.cg-new .vn-box,html[data-motion="mid"] .vn-stage.has-cg.cg-new .vn-box{animation:panelin .8s var(--ease) 2.2s both}
+html[data-motion="lo"] .vn-stage.has-cg.cg-new .vn-box{animation:fadein .4s ease .3s both}
+.vn-stage.has-cg.cg-new .vn-box::before{content:'';position:absolute;inset:-20%;z-index:1;pointer-events:none;
+  background:linear-gradient(110deg,transparent 35%,rgba(255,236,190,.55) 48%,rgba(255,250,235,.75) 50%,rgba(255,236,190,.55) 52%,transparent 65%);transform:translateX(-120%)}
+html[data-motion="hi"] .vn-stage.has-cg.cg-new .vn-box::before,html[data-motion="mid"] .vn-stage.has-cg.cg-new .vn-box::before{animation:leak 1.6s ease-out 2.6s both}
+@keyframes leak{to{transform:translateX(120%)}}
+.cg-name{display:inline-block;align-self:flex-start;padding:.12em .9em .18em .6em;color:#fffaf2;text-shadow:0 2px 3px rgba(90,30,40,.45);
+  background:linear-gradient(100deg,#b84a5e 0,#c9586a 40%,#a63e52 96%,transparent 100%);
+  clip-path:polygon(0 12%,10% 2%,45% 8%,80% 0,99% 10%,96% 55%,100% 92%,60% 100%,25% 94%,2% 100%)}
+html[data-motion="hi"] .vn-stage.has-cg.cg-new .cg-name,html[data-motion="mid"] .vn-stage.has-cg.cg-new .cg-name{animation:brushin .6s cubic-bezier(.2,.8,.2,1) 2.5s both}
+
+/* ── 하(lo): 나타나기 · 밀려오기만 ── */
+html[data-motion="lo"] .vn-actor{animation:fadein .35s ease both}
+html[data-motion="lo"] .vn-stage.tr-page .vn-scene,html[data-motion="lo"] .vn-stage.tr-wipe .vn-scene{animation:fadein .4s ease both}
+html[data-motion="lo"] .vn-emote{animation:fadein .3s ease both}
+html[data-motion="lo"] .petal,html[data-motion="lo"] .spark,html[data-motion="lo"] .ts-veil::after{animation:none;display:none}
+html[data-motion="lo"] .ts-kv{animation:none}
+
+/* ── 끄기(off): 움직임 없음(바로 바뀜) — 컴퓨터의 「움직임 줄이기」를 켜면 처음 값이 이것 ── */
+html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="off"] *::after{animation:none!important;transition:none!important}
+html[data-motion="off"] .petals,html[data-motion="off"] .vn-wx,html[data-motion="off"] .vn-bloom,html[data-motion="off"] .fx-conf,html[data-motion="off"] .fx-burst,html[data-motion="off"] .fx-trail{display:none!important}
+html[data-motion="off"] .vn-stage.has-cg .vn-bg{transform:none!important}
+html[data-motion="off"] .vn-scene.shake,html[data-motion="off"] .vn-scene.pushin{transform:none}
+
+/* 무대가 아주 낮으면(창이 낮거나 설정 판을 연 채 · 높이 310px 아래) 위쪽 이름표 · 지표 · 꼬리표가 머리에 닿는다 → 그때만 숨긴다(얼굴 우선) */
+.vn-stage:not(.has-cg) > .vn-scene{container-type:size}
+@media (min-width:761px){ @container (max-height:310px){ .vn-chip,.vn-hudw,.fx-chips,.vn-fx{display:none!important} } }
+/* 휴대 전화(지표 · 꼬리표는 이미 아래쪽): 위에 있는 이름표만 숨기고, 선택 결과 배지는 아래쪽(몸 자리)으로 */
+@media (max-width:760px){ @container (max-height:310px){ .vn-chip{display:none!important} .vn-fx{top:auto;bottom:44px} } }

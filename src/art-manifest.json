@@ -12,35 +12,53 @@
     "img/ch/hangyeol_1.webp",
     "img/ch/hangyeol_2.webp"
    ],
-   "from": "01_한결.png"
+   "from": "01_한결.png",
+   "head": [
+    0.021,
+    0.008,
+    0.895,
+    0.348
+   ]
   },
   "daon": {
    "sprite": {
     "src": "img/ch/daon.webp",
     "w": 237,
     "h": 600,
-    "kb": 33
+    "kb": 36
    },
    "faces": [
     "img/ch/daon_0.webp",
     "img/ch/daon_1.webp",
     "img/ch/daon_2.webp"
    ],
-   "from": "02_다온.png"
+   "from": "02_다온.png",
+   "head": [
+    0.021,
+    0.008,
+    0.907,
+    0.348
+   ]
   },
   "soyun": {
    "sprite": {
     "src": "img/ch/soyun.webp",
     "w": 260,
     "h": 600,
-    "kb": 36
+    "kb": 38
    },
    "faces": [
     "img/ch/soyun_0.webp",
     "img/ch/soyun_1.webp",
     "img/ch/soyun_2.webp"
    ],
-   "from": "03_한소윤.png"
+   "from": "03_한소윤.png",
+   "head": [
+    0.023,
+    0.008,
+    0.981,
+    0.348
+   ]
   },
   "eungyeol": {
    "sprite": {
@@ -54,21 +72,33 @@
     "img/ch/eungyeol_1.webp",
     "img/ch/eungyeol_2.webp"
    ],
-   "from": "06_서은결.png"
+   "from": "06_서은결.png",
+   "head": [
+    0.023,
+    0.008,
+    0.94,
+    0.348
+   ]
   },
   "harin": {
    "sprite": {
     "src": "img/ch/harin.webp",
     "w": 315,
     "h": 600,
-    "kb": 46
+    "kb": 48
    },
    "faces": [
     "img/ch/harin_0.webp",
     "img/ch/harin_1.webp",
     "img/ch/harin_2.webp"
    ],
-   "from": "04_도하린.png"
+   "from": "04_도하린.png",
+   "head": [
+    0.124,
+    0.008,
+    0.943,
+    0.348
+   ]
   },
   "hanbyeol": {
    "sprite": {
@@ -82,119 +112,173 @@
     "img/ch/hanbyeol_1.webp",
     "img/ch/hanbyeol_2.webp"
    ],
-   "from": "07_주한별.png"
+   "from": "07_주한별.png",
+   "head": [
+    0.053,
+    0.008,
+    0.986,
+    0.348
+   ]
   },
   "chaewon": {
    "sprite": {
     "src": "img/ch/chaewon.webp",
     "w": 273,
     "h": 600,
-    "kb": 41
+    "kb": 44
    },
    "faces": [
     "img/ch/chaewon_0.webp",
     "img/ch/chaewon_1.webp",
     "img/ch/chaewon_2.webp"
    ],
-   "from": "05_유채원.png"
+   "from": "05_유채원.png",
+   "head": [
+    0.106,
+    0.008,
+    0.821,
+    0.348
+   ]
   },
   "haru": {
    "sprite": {
     "src": "img/ch/haru.webp",
     "w": 252,
     "h": 600,
-    "kb": 39
+    "kb": 42
    },
    "faces": [
     "img/ch/haru_0.webp",
     "img/ch/haru_1.webp",
     "img/ch/haru_2.webp"
    ],
-   "from": "08_민하루.png"
+   "from": "08_민하루.png",
+   "head": [
+    0.02,
+    0.008,
+    0.921,
+    0.348
+   ]
   },
   "tenu": {
    "sprite": {
     "src": "img/ch/tenu.webp",
     "w": 281,
     "h": 600,
-    "kb": 37
+    "kb": 40
    },
    "faces": [
     "img/ch/tenu_0.webp",
     "img/ch/tenu_1.webp",
     "img/ch/tenu_2.webp"
    ],
-   "from": "09_테누.png"
+   "from": "09_테누.png",
+   "head": [
+    0.132,
+    0.008,
+    0.694,
+    0.348
+   ]
   },
   "bong": {
    "sprite": {
     "src": "img/ch/bong.webp",
     "w": 227,
     "h": 600,
-    "kb": 32
+    "kb": 35
    },
    "faces": [
     "img/ch/bong_0.webp",
     "img/ch/bong_1.webp",
     "img/ch/bong_2.webp"
    ],
-   "from": "10_봉선생님.png"
+   "from": "10_봉선생님.png",
+   "head": [
+    0.123,
+    0.008,
+    0.789,
+    0.348
+   ]
   },
   "miko": {
    "sprite": {
     "src": "img/ch/miko.webp",
     "w": 260,
     "h": 600,
-    "kb": 46
+    "kb": 45
    },
    "faces": [
     "img/ch/miko_0.webp",
     "img/ch/miko_1.webp",
     "img/ch/miko_2.webp"
    ],
-   "from": "11_미코.png"
+   "from": "11_미코.png",
+   "head": [
+    0.062,
+    0.008,
+    0.927,
+    0.348
+   ]
   },
   "hala": {
    "sprite": {
     "src": "img/ch/hala.webp",
     "w": 271,
     "h": 600,
-    "kb": 46
+    "kb": 49
    },
    "faces": [
     "img/ch/hala_0.webp",
     "img/ch/hala_1.webp",
     "img/ch/hala_2.webp"
    ],
-   "from": "12_할라할머니.png"
+   "from": "12_할라할머니.png",
+   "head": [
+    0.273,
+    0.008,
+    0.793,
+    0.348
+   ]
   },
   "bara": {
    "sprite": {
     "src": "img/ch/bara.webp",
     "w": 258,
     "h": 600,
-    "kb": 37
+    "kb": 38
    },
    "faces": [
     "img/ch/bara_0.webp",
     "img/ch/bara_1.webp",
     "img/ch/bara_2.webp"
    ],
-   "from": "13_바라선생님.png"
+   "from": "13_바라선생님.png",
+   "head": [
+    0.019,
+    0.008,
+    0.678,
+    0.348
+   ]
   },
   "kamu": {
    "sprite": {
     "src": "img/ch/kamu.webp",
     "w": 280,
     "h": 600,
-    "kb": 34
+    "kb": 36
    },
    "faces": [
     "img/ch/kamu_0.webp",
     "img/ch/kamu_1.webp",
     "img/ch/kamu_2.webp"
    ],
-   "from": "14_카무아저씨.png"
+   "from": "14_카무아저씨.png",
+   "head": [
+    0.157,
+    0.008,
+    0.7,
+    0.348
+   ]
   }
  },
  "bg": {
@@ -291,11 +375,6 @@
     72
    ]
   },
-  "bow": {
-   "src": "img/ui/bow.webp",
-   "w": 378,
-   "h": 80
-  },
   "frame_cert": {
    "src": "img/ui/frame_cert.webp",
    "w": 900,
@@ -317,6 +396,11 @@
     70,
     70
    ]
+  },
+  "bow": {
+   "src": "img/ui/bow.webp",
+   "w": 378,
+   "h": 80
   },
   "corner": {
    "src": "img/ui/corner.webp",

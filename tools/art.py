@@ -96,13 +96,10 @@ def runs(mask: np.ndarray) -> list[tuple[int, int]]:
     return out
 
 
-def flood_transparent(rgb: np.ndarray, bg: np.ndarray, tol: float = 56.0) -> np.ndarray:
-    """가장자리에서 이어진 바탕색 영역만 투명으로(흰 셔츠 · 운동화 안쪽은 남는다). 돌려줌: alpha(0~255)"""
-    h, w, _ = rgb.shape
-    diff = np.abs(rgb.astype(np.int16) - bg.astype(np.int16)).max(axis=2)
-    bgl = diff < tol
-    # 가장자리에서 시작해 바탕색 칸만 따라 번지기(한 번에 한 칸씩, numpy 로)
-    seen = np.zeros((h, w), dtype=bool)
+def flood_outside(d: np.ndarray, tol: float) -> np.ndarray:
+    """가장자리에서 이어진 바탕색 칸(d < tol)만 따라 번진 영역(참 = 바깥)"""
+    bgl = d < tol
+    seen = np.zeros_like(bgl)
     seen[0, :] = bgl[0, :]; seen[-1, :] = bgl[-1, :]; seen[:, 0] = bgl[:, 0]; seen[:, -1] = bgl[:, -1]
     front = seen.copy()
     while front.any():
@@ -111,12 +108,60 @@ def flood_transparent(rgb: np.ndarray, bg: np.ndarray, tol: float = 56.0) -> np.
         grow[:, 1:] |= front[:, :-1]; grow[:, :-1] |= front[:, 1:]
         front = grow & bgl & ~seen
         seen |= front
-    alpha = np.where(seen, 0, 255).astype(np.uint8)
-    # 바탕에 가까운 가장자리는 반투명으로(테두리 번짐 줄이기)
-    soft = np.clip((diff.astype(np.float32) - tol * 0.6) / (tol * 0.8), 0, 1)
-    edge = np.array(Image.fromarray(alpha).filter(ImageFilter.MaxFilter(3))) > np.array(Image.fromarray(alpha).filter(ImageFilter.MinFilter(3)))
-    alpha = np.where(edge & (alpha == 255), (soft * 255).astype(np.uint8).clip(80, 255), alpha)
-    return alpha
+    return seen
+
+
+def _dilate(m: np.ndarray, k: int = 3) -> np.ndarray:
+    return np.array(Image.fromarray(m.astype(np.uint8) * 255).filter(ImageFilter.MaxFilter(k))) > 0
+
+
+def key_background(rgb: np.ndarray, bg: np.ndarray, head_frac: float, tol: float = 56.0) -> tuple[np.ndarray, np.ndarray]:
+    """크림 바탕 빼기. 돌려줌: (색을 바탕에서 떼어 낸 rgb, alpha 0~255)
+
+    1) 가장자리에서 이어진 바탕(예전 방식) — 흰 셔츠 · 운동화 안쪽은 바탕과 이어지지 않아 남는다
+    2) 갇힌 바탕: 머리카락 가닥 · 다리 · 팔 사이에 갇혀 1)이 못 닿는 크림 칸
+       - 바탕과 거의 같은 색(d ≤ 10)인 덩어리만 본다(바탕은 종이 결이 없어 d ≤ 4)
+       - 큰 덩어리(≥1500px)이면서 거의 다 바탕색(d ≤ 3 이 65% 이상) → 다리 · 팔 사이 빈칸
+         (흰 양말 · 운동화 · 셔츠는 음영이 있어 이 비율이 60% 아래)
+       - 머리 높이(head_frac 위쪽)에서 바깥과 10px 안에 붙은 덩어리 → 머리카락 가닥 사이 빈칸
+         (눈 흰자 · 깃은 바깥에서 멀다). 묶은 머리 고리 안쪽처럼 20px 안이면 d ≤ 3 이 40% 이상일 때만
+    3) 가장자리 1~2px 의 밝은 번짐을 투명도로 바꾸고 색에서 크림을 덜어 낸다(후광 없애기)
+    """
+    import cv2  # 이 단계에만 쓴다
+
+    H, W, _ = rgb.shape
+    d = np.abs(rgb.astype(np.int16) - bg.astype(np.int16)).max(axis=2)
+    out = flood_outside(d, tol)
+    tight = ((d <= 10) & ~out).astype(np.uint8)
+    n, lab, st, cen = cv2.connectedComponentsWithStats(tight, connectivity=4)
+    dist = cv2.distanceTransform((~out).astype(np.uint8), cv2.DIST_L2, 3)
+    remove = np.zeros_like(out)
+    for i in range(1, n):
+        area = int(st[i, 4])
+        if area < 40:
+            continue
+        m = lab == i
+        flat = float((d[m] <= 3).mean())
+        if area >= 1500 and flat >= 0.65:
+            remove |= m
+        elif cen[i][1] < H * head_frac:
+            r = float(dist[m].min())
+            if r <= 10 or (r <= 20 and flat >= 0.4):  # 가닥이 두꺼운 고리(묶은 머리) 안쪽은 조금 멀어도 바탕색이 고르면
+                remove |= m
+    # 갇힌 바탕 둘레의 옅은 번짐도 함께(피부 · 흰 옷은 d 가 커서 닿지 않는다)
+    for _ in range(2):
+        remove |= _dilate(remove) & (d < 30) & ~out
+    clear = out | remove
+    alpha = np.where(clear, 0.0, 1.0).astype(np.float32)
+    # 가장자리 2px: 바탕에 가까울수록 투명하게
+    ring = _dilate(_dilate(clear)) & ~clear
+    cover_ = np.clip((d.astype(np.float32) - 6) / 60, 0, 1)
+    alpha = np.where(ring, np.minimum(alpha, cover_), alpha)
+    # 색에서 크림 덜어 내기: c = a·f + (1-a)·bg → f = bg + (c - bg)/a
+    a3 = np.maximum(alpha, 0.2)[..., None]
+    f = np.clip(bg + (rgb.astype(np.float32) - bg) / a3, 0, 255)
+    out_rgb = np.where(ring[..., None], f, rgb.astype(np.float32)).astype(np.uint8)
+    return out_rgb, (alpha * 255).round().astype(np.uint8)
 
 
 def crop_sheet(path: Path) -> dict:
@@ -143,7 +188,7 @@ def crop_sheet(path: Path) -> dict:
     x0, x1 = max(cols[0] - pad, 0), min(cols[-1] + pad, split)
     y0, y1 = max(rows[0] - pad, 0), min(rows[-1] + pad, H)
     body = a[y0:y1, x0:x1]
-    alpha = flood_transparent(body, bg)
+    body, alpha = key_background(body, bg, head_frac=0.36)
     sprite = Image.fromarray(np.dstack([body, alpha]), 'RGBA')
 
     # 얼굴(2~3개가 세로로 붙어 있다) — 위아래 끝을 찾고, 1/3 · 2/3(또는 1/2) 근처에서 가장 빈 가로줄로 나눈다
@@ -180,8 +225,27 @@ def crop_sheet(path: Path) -> dict:
         sx, sy = cx - side // 2, cy - side // 2
         piece = im.crop((max(sx, 0), max(sy, s), min(sx + side, W), min(sy + side, e)))
         crop.paste(piece, (max(sx, 0) - sx, max(sy, s) - sy))
-        faces.append(crop)
+        fr, fa = key_background(np.asarray(crop), bg, head_frac=0.6)
+        faces.append(Image.fromarray(np.dstack([fr, fa]), 'RGBA'))
     return {'sprite': sprite, 'faces': faces}
+
+
+def head_box(im: Image.Image) -> list[float]:
+    """서 있는 그림의 머리(머리카락 · 묶은 머리 포함) 상자 [x0, y0, x1, y1] — 그림 비율(0~1).
+    감정 표시 · 반짝이가 머리를 피할 때 쓴다(stage.js 가 data-head 로 넘긴다).
+    가로: 맨 위 6% 줄에 닿는 덩어리(머리카락)를 위 25% 안에서만 본다 — 들어 올린 주먹 · 지팡이는 따로 떨어져 빠진다.
+    세로: 맨 위부터 그림 높이 34%(턱 · 어깨 가까이)"""
+    import cv2
+    a = np.asarray(im.convert('RGBA'))[..., 3] > 128
+    H, W = a.shape
+    top = int(np.where(a.any(axis=1))[0][0])
+    lim = min(H, top + int(H * 0.25))
+    _, lab, st, _ = cv2.connectedComponentsWithStats(a[:lim].astype(np.uint8), connectivity=8)
+    ids = [i for i in set(lab[top:top + int(H * 0.06)].ravel().tolist()) if i and st[i, 4] > 300]
+    if not ids:
+        return [0.15, 0.0, 0.85, 0.36]
+    x0 = min(int(st[i, 0]) for i in ids); x1 = max(int(st[i, 0] + st[i, 2]) for i in ids)
+    return [round(x0 / W, 3), round(top / H, 3), round(x1 / W, 3), round(min(H, top + int(H * 0.34)) / H, 3)]
 
 
 def save_webp(img: Image.Image, path: Path, quality: int = 80) -> dict:
@@ -232,7 +296,8 @@ def main() -> int:
         if old_sp.exists() and old_faces and old_sp.stat().st_mtime > src.stat().st_mtime and '--force' not in sys.argv:
             im = Image.open(old_sp)
             manifest['chars'][cid] = {'sprite': {'src': old_sp.relative_to(DEV / 'site').as_posix(), 'w': im.width, 'h': im.height, 'kb': round(old_sp.stat().st_size / 1024)},
-                                      'faces': [f.relative_to(DEV / 'site').as_posix() for f in old_faces], 'from': src.name}
+                                      'faces': [f.relative_to(DEV / 'site').as_posix() for f in old_faces], 'from': src.name,
+                                      'head': head_box(im)}
             print(f'  캐릭터 {cid:9s} (그대로)')
             continue
         try:
@@ -242,7 +307,7 @@ def main() -> int:
             continue
         sp = r['sprite']
         sp = sp.resize((round(sp.width * SPRITE_H / sp.height), SPRITE_H), Image.LANCZOS)
-        ent = {'sprite': save_webp(sp, OUT / 'ch' / f'{cid}.webp', 82), 'faces': [], 'from': src.name}
+        ent = {'sprite': save_webp(sp, OUT / 'ch' / f'{cid}.webp', 82), 'faces': [], 'from': src.name, 'head': head_box(sp)}
         for i, f in enumerate(r['faces']):
             ent['faces'].append(save_webp(f.resize((FACE, FACE), Image.LANCZOS), OUT / 'ch' / f'{cid}_{i}.webp', 82)['src'])
         manifest['chars'][cid] = ent

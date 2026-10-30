@@ -70,7 +70,7 @@ ok(set('s1', `${R}/players/s1`, { num: 3, joinedAt: TS, on: false, last: TS }), 
 ok(write('s1', `${R}/players/s1`, { on: false, last: TS }, { commit: false }), '자리 뒤 끊김 처리 허용');
 ok(set('s2', `${R}/players/s2`, { num: 4, joinedAt: TS, on: true, last: TS }), '두 번째 학생');
 ok(!set('s1', `${R}/players/s2`, { num: 9, joinedAt: TS, on: true, last: TS }), '남의 자리 못 씀');
-ok(!set('s3', `${R}/players/s3`, { num: 31, joinedAt: TS, on: true, last: TS }), '번호 1~30');
+ok(!set('s3', `${R}/players/s3`, { num: 100, joinedAt: TS, on: true, last: TS }), '번호 1~99');
 ok(!set('s3', `${R}/players/s3`, { num: 5, joinedAt: TS, name: '홍길동' }), '자리에 이름 칸 없음');
 ok(!set('s3', `${R}/players/s3`, { num: 5, joinedAt: 12345 }), 'joinedAt 은 서버 시각만');
 ok(!set('s1', `${R}/state/c`, '{}'), '학생은 state 못 씀');

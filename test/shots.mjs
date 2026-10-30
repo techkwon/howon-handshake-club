@@ -123,7 +123,7 @@ await shot(big.page, 'class_ended_1366', { noVScroll: true });
 // ── 개인 모드: 한 사람씩 단계마다 ─────────────────────────────────
 const host2 = await openHost(browser, srv, { mode: 'solo' });
 const H2 = host2.page;
-await H2.evaluate(() => { localStorage.setItem('vn.host.pref', JSON.stringify({ cls: 4, mode: 'solo', pace: 'normal' })); });
+await H2.evaluate(() => { localStorage.setItem('vn.host.pref', JSON.stringify({ seats: 24, mode: 'solo', pace: 'normal' })); });
 const sb = await openStudent(browser, srv, host2.code, 3);
 const sp = await openStudent(browser, srv, host2.code, 4, { view: { width: 375, height: 812 } });
 await shot(sb.page, 'solo_lobby_1366', { noVScroll: true });

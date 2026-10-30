@@ -3,6 +3,7 @@
 import ART from './art-manifest.json';
 import { CHARS, roleChar, SHOWN, CARDS } from './story.js';
 import { esc } from './shared.js';
+import { setWeather, weatherOf, reduced, lv, speakerChanged, placeMark } from './fx.js';
 
 // 배경 자리 그림: [위 색, 아래 색, 그림 글자, 이름]
 const BG_PH = {
@@ -37,7 +38,7 @@ export function cgKey(ending, g) {
 export function spriteHTML(charId, cls = '') {
   const c = CHARS[charId];
   const a = ART.chars && ART.chars[charId];
-  if (a && a.sprite) return `<img class="vn-sprite ${cls}" src="${a.sprite.src}" alt="${esc(c.name)}" width="${a.sprite.w}" height="${a.sprite.h}" draggable="false">`;
+  if (a && a.sprite) return `<img class="vn-sprite ${cls}" src="${a.sprite.src}" alt="${esc(c.name)}" width="${a.sprite.w}" height="${a.sprite.h}"${a.head ? ` data-head="${a.head.join(',')}"` : ''} draggable="false">`;
   const col = c ? c.color : '#b0aea5';
   return `<svg class="vn-sprite ph ${cls}" viewBox="0 0 120 300" role="img" aria-label="${esc(c ? c.name : '')}">
     <circle cx="60" cy="58" r="40" fill="${col}" opacity=".85"/><rect x="22" y="104" width="76" height="150" rx="34" fill="${col}" opacity=".7"/>
@@ -68,11 +69,11 @@ export function stageHTML(o) {
   const sp = o.speaker && roles.includes(o.speaker) ? o.speaker : null;
   const showCast = !(o.cg && ART.end && ART.end[o.cg]);
   return `
-  <div class="vn-stage ${o.tint ? 'tint-' + o.tint : ''} ${o.cls || ''} ${showCast ? '' : 'has-cg'}">
+  <div class="vn-stage ${o.tint ? 'tint-' + o.tint : ''} ${o.cls || ''} ${showCast ? '' : 'has-cg'} ${o.romance ? 'romance' : ''}">
     <div class="vn-scene">
       <div class="vn-bg" style="${bgStyle(o.bg, o.cg)}">${bgMotif(o.bg, o.cg)}</div>
-      ${showCast && cast.length ? `<div class="vn-cast n${cast.length}">${cast.map(([r, id]) => `
-        <div class="vn-actor ${sp && sp !== r ? 'dim' : ''} ${sp === r ? 'speak' : ''}" data-role="${r}">
+      ${showCast && cast.length ? `<div class="vn-cast n${cast.length}">${cast.map(([r, id], i) => `
+        <div class="vn-actor ${sp && sp !== r ? 'dim' : ''} ${sp === r ? 'speak' : ''}" data-role="${r}" style="--ph:-${((i * 1.73 + id.length * 0.61) % 5).toFixed(2)}s;--sw:${i % 2 ? 1 : -1}">
           ${spriteHTML(id)}${(o.notes || []).includes(r) ? '<span class="vn-note" aria-label="호감이 올랐어요">♪</span>' : ''}
         </div>`).join('')}</div>` : ''}
       <div class="vn-chip" ${o.chip ? '' : 'hidden'}>${esc(o.chip || '')}</div>
@@ -90,23 +91,40 @@ const NOTE = '<span class="vn-note" aria-label="호감이 올랐어요">♪</spa
 export function renderStage(el, o) {
   const run = o.run || {};
   const cast = (o.cast || []).map(r => [r, roleChar(r, run)]).filter(([, id]) => id);
-  const sig = JSON.stringify([o.bg, o.cg, o.tint, cast, o.cls || '']);
+  const sig = JSON.stringify([o.bg, o.cg, o.tint, cast, o.cls || '', !!o.romance]);
+  const sp0 = o.speaker && cast.some(([r]) => r === o.speaker) ? o.speaker : null;
   const st = el.firstElementChild;
   if (!st || !st.classList.contains('vn-stage') || st.dataset.sig !== sig) {
+    // 장면 넘김: 학년 · 달이 바뀌면 책장 넘기기, 배경만 바뀌면 옆으로 닦기, 그 밖엔 스르륵
+    const prev = st && st.classList.contains('vn-stage') ? st.dataset : null;
+    const trans = !prev ? 'fade' : (o.when && prev.when && prev.when !== o.when) ? 'page' : prev.bg !== String(o.bg) ? 'wipe' : 'fade';
     el.innerHTML = stageHTML(o);
-    el.firstElementChild.dataset.sig = sig;
+    const ns = el.firstElementChild;
+    ns.dataset.sig = sig; ns.dataset.when = o.when || ''; ns.dataset.bg = String(o.bg);
+    ns.classList.add('tr-' + (reduced() ? 'fade' : trans));
+    if (ns.classList.contains('has-cg')) ns.classList.add('cg-new');
+    setTimeout(() => ns.classList.remove('tr-page', 'tr-wipe', 'tr-fade', 'cg-new'), 2600);
     const ov = el.querySelector('.vn-ov'), bw = el.querySelector('.vn-boxw');
     ov.dataset.h = o.overlay || ''; bw.dataset.h = o.boxHTML || '';
+    setWeather(ns.querySelector('.vn-scene'), ns.classList.contains('has-cg') ? null : (o.wx !== undefined ? o.wx : weatherOf(o.bg, o.tint, o.romance)));
+    ns.dataset.sp = sp0 || '';
+    placeNotes(ns);
     return true;
   }
   const roles = cast.map(([r]) => r);
   const sp = o.speaker && roles.includes(o.speaker) ? o.speaker : null;
+  const prevSp = st.dataset.sp || '';
+  st.dataset.sp = sp || '';
   st.querySelectorAll('.vn-actor').forEach(a => {
     const r = a.dataset.role;
+    if (sp === r && prevSp !== r) {
+      speakerChanged();
+      if (lv() === 'hi' || lv() === 'mid') { a.classList.remove('hop'); void a.offsetWidth; a.classList.add('hop'); }
+    }
     a.classList.toggle('dim', !!sp && sp !== r);
     a.classList.toggle('speak', sp === r);
     const has = a.querySelector('.vn-note'), want = (o.notes || []).includes(r);
-    if (want && !has) a.insertAdjacentHTML('beforeend', NOTE);
+    if (want && !has) { a.insertAdjacentHTML('beforeend', NOTE); placeMark(a, a.querySelector('.vn-note')); }
     if (!want && has) has.remove();
   });
   const chip = st.querySelector('.vn-chip');
@@ -114,8 +132,13 @@ export function renderStage(el, o) {
   const hud = o.hud ? hudHTML(o.hud, o.delta) : '';
   const hw = st.querySelector('.vn-hudw'); if (hw.dataset.h !== hud) { hw.innerHTML = hud; hw.dataset.h = hud; }
   const ov = st.querySelector('.vn-ov'); if (ov.dataset.h !== (o.overlay || '')) { ov.innerHTML = o.overlay || ''; ov.dataset.h = o.overlay || ''; }
-  const bw = st.querySelector('.vn-boxw'); if (bw.dataset.h !== (o.boxHTML || '')) { bw.innerHTML = o.boxHTML || ''; bw.dataset.h = o.boxHTML || ''; }
+  const bw = st.querySelector('.vn-boxw'); if (bw.dataset.h !== (o.boxHTML || '')) { st.classList.remove('cg-new'); bw.innerHTML = o.boxHTML || ''; bw.dataset.h = o.boxHTML || ''; }
   return false;
+}
+
+/** ♪ 를 머리 밖 자리로(새 장면) */
+function placeNotes(st) {
+  for (const n of st.querySelectorAll('.vn-actor > .vn-note')) placeMark(n.parentElement, n);
 }
 
 export function hudHTML(st, delta = null) {
@@ -128,8 +151,8 @@ export function boxHTML(lines, shown, opts = {}) {
   const vis = lines.slice(0, shown);
   const keep = opts.keep || 6;
   const start = Math.max(0, vis.length - keep);
-  return `<div class="vn-box" role="log" aria-live="polite" aria-relevant="additions">
-    ${vis.slice(start).map((l, i) => lineHTML(l, start + i === vis.length - 1)).join('')}
+  return `<div class="vn-box ${opts.cls || ''}" role="log" aria-live="polite" aria-relevant="additions">
+    ${opts.head || ''}${vis.slice(start).map((l, i) => lineHTML(l, start + i === vis.length - 1)).join('')}
     ${opts.footer || ''}
   </div>`;
 }
@@ -139,6 +162,11 @@ export function lineHTML(l, isNew) {
   const c = CHARS[l.char];
   return `<p class="vn-line ${isNew ? 'new' : 'old'}">
     ${faceHTML(l.char, l.face)}<span class="vn-name" style="--nc:${c ? c.color : '#ccc'}">${esc(l.name)}</span><span class="vn-text">${esc(l.text)}</span></p>`;
+}
+
+/** 엔딩 글 상자 머리: 졸업식 · 엔딩 번호 · 이름(그림 칸 대신 글 칸에 — 그림 위에는 아무것도 올리지 않는다) */
+export function cgHead(n) {
+  return `<div class="cg-head"><span class="cg-k">졸업식 · 엔딩 ${n.no}</span><b class="cg-name">${esc(n.name)}</b></div>`;
 }
 
 /** 기술 카드 */
@@ -235,6 +263,15 @@ export function trimBoxes(root = typeof document !== 'undefined' ? document : nu
       if (l.getBoundingClientRect().top >= top - 1) break;
       l.classList.add('cut');
     }
+    // 위에서부터 채우는 상자(엔딩 글 칸)는 아래로 넘친다 → 지금 줄이 다 보일 때까지 오래된 줄부터 숨긴다
+    for (const l of lines) {
+      if (box.scrollHeight <= box.clientHeight + 1) break;
+      if (l === lines[lines.length - 1] || l.classList.contains('new')) break;
+      if (!l.classList.contains('cut')) l.classList.add('cut');
+    }
+    // 지금 줄 하나만으로도 넘치면(아주 낮은 화면) 칸 안 스크롤로 지금 줄 처음부터 보여 준다(나머지는 스크롤)(엔딩 글 칸은 overflow-y:auto)
+    const cur = lines[lines.length - 1];
+    if (cur && box.scrollHeight > box.clientHeight + 1) box.scrollTop += cur.getBoundingClientRect().top - top;
   }
 }
 if (typeof document !== 'undefined' && typeof MutationObserver !== 'undefined') {

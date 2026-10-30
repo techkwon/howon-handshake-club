@@ -4,11 +4,14 @@ import { connectNet, netMode, isTestMode } from './net.js';
 import * as S from './story.js';
 import { T, PACES, lineMs } from './flow.js';
 import { countVotes, resolveVote } from './vote.js';
-import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML } from './stage.js';
-import { ROOT, MAX_NUM, DAY_MS, esc, parseJSON, newRoomCode, devTag, CIRCLED, LS, REFL_Q, randInt, gradeOf, GRADE_LABEL, speedFactor } from './shared.js';
+import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
+import { initSound, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
+import { moodOf, lineFx, emote, shake, bloom, techBurst, floatChips, confetti, winBurst, tallyDrama, countdown, emphasize, endingReveal, chapterOf, chapterCard, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
+import { ROOT, MAX_NUM, DEFAULT_SEATS, seatsOf, seatLabel, DAY_MS, esc, parseJSON, newRoomCode, devTag, CIRCLED, LS, REFL_Q, randInt, gradeOf, GRADE_LABEL, speedFactor } from './shared.js';
 
 const $ = s => document.querySelector(s);
 const stage = $('#stage');
+const PREF0 = { seats: DEFAULT_SEATS, mode: 'class', pace: 'normal' };
 const LS_SNAP = 'vn.host.snap', LS_ROOMS = 'vn.host.rooms', LS_PREF = 'vn.host.pref', LS_BOARD = 'vn.board';
 const SPEED = speedFactor();
 const CANCEL = Symbol('cancel');
@@ -26,6 +29,8 @@ const H = {
   offs: [],
 };
 window.__vnHost = H; // 시험 · 점검용
+// 소리: 진행판(프로젝터)은 BGM 켬(작게) · 효과음 켬. 처음 누를 때(시작 그림 · 새 수업 시작) 소리 장치를 연다
+initSound({ page: 'host', defaults: { bgm: true, sfx: true, bgmVol: 0.35, sfxVol: 0.5, track: 'm1', motion: 'hi' } });   // 진행판: 소리 켬 · 움직임 「상」
 
 const now = () => (H.net && !H.offline ? H.net.serverNow() : Date.now());
 const roomP = p => `${ROOT}/${H.code}/${p}`;
@@ -74,10 +79,22 @@ function hideSplash() {
   const b = document.getElementById('bNew') || document.getElementById('bCreate'); if (b && !b.disabled) b.focus({ preventScroll: true });
 }
 
+/** 수업 설정(학생 수 1~99 · 방식 · 속도). 옛 설정(반 번호 cls)은 버린다 */
+function prefGet() {
+  const p = { ...PREF0, ...LS.get(LS_PREF, {}) };
+  p.seats = Math.min(MAX_NUM, Math.max(1, Math.round(Number(p.seats)) || DEFAULT_SEATS));
+  return p;
+}
+function prefSet(patch) { const p = { ...prefGet(), ...patch }; delete p.cls; LS.set(LS_PREF, p); return p; }
+const SEAT_QUICK = [20, 24, 26, 28, 30, 32, 35];
+/** 기록판 날짜: 10.30(금) 3교시 같은 꼴 대신 「10.30 14:05」 */
+function when(at) { const d = new Date(at || 0); const z = n => String(n).padStart(2, '0'); return `${d.getMonth() + 1}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; }
+
 function renderStart(st) {
   H.view = { kind: 'start' };
+  music('open');
   document.body.classList.add('at-title');
-  const pref = LS.get(LS_PREF, { cls: 1, mode: 'class', pace: 'normal' });
+  const pref = prefGet();
   const snap = LS.get(LS_SNAP);
   const canResume = snap && Date.now() - snap.savedAt < 8 * 3600 * 1000 && snap.meta;
   const board = LS.get(LS_BOARD, []).slice(-12).reverse();
@@ -91,8 +108,13 @@ function renderStart(st) {
       ${logoHTML()}
       ${startStep === 'setup' ? `<section class="ts-setup panel" aria-label="수업 설정">
         <h2 class="setup-h">새 수업 준비</h2>
-        <div class="lbl">반</div>
-        <div class="seg seg-cls" id="segCls">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(c => `<button class="segb ${pref.cls === c ? 'on' : ''}" data-v="${c}" aria-pressed="${pref.cls === c}">3-${c}</button>`).join('')}</div>
+        <div class="lbl" id="lblSeats">학생 수 <span class="dim">· 번호 1번부터 몇 번까지 · 1~${MAX_NUM}명</span></div>
+        <div class="seats" role="group" aria-labelledby="lblSeats">
+          <button class="seat-b" id="seatMinus" aria-label="한 명 줄이기" ${pref.seats <= 1 ? 'disabled' : ''}>−</button>
+          <label class="seat-n"><input id="iSeats" class="num" type="number" inputmode="numeric" min="1" max="${MAX_NUM}" value="${pref.seats}" aria-label="학생 수"><span>명</span></label>
+          <button class="seat-b" id="seatPlus" aria-label="한 명 늘리기" ${pref.seats >= MAX_NUM ? 'disabled' : ''}>+</button>
+          <span class="seat-q">${SEAT_QUICK.map(n => `<button class="segb ${pref.seats === n ? 'on' : ''}" data-seats="${n}" aria-pressed="${pref.seats === n}">${n}</button>`).join('')}</span>
+        </div>
         <div class="lbl">방식</div>
         <div class="seg" id="segMode">
           <button class="segb ${pref.mode === 'class' ? 'on' : ''}" data-v="class" aria-pressed="${pref.mode === 'class'}">전체 모드 <small>반 전체가 투표로</small></button>
@@ -101,37 +123,49 @@ function renderStart(st) {
         <div class="lbl">글 넘기는 속도 <span class="dim">· 전체 모드 · 진행 중에도 바꿀 수 있어요</span></div>
         <div class="seg" id="segPace">${[['slow', '느리게'], ['normal', '보통'], ['fast', '빠르게']].map(([k, l]) => `<button class="segb ${pref.pace === k ? 'on' : ''}" data-v="${k}" aria-pressed="${pref.pace === k}">${l}</button>`).join('')}</div>
         <div class="setup-go">
-          <button class="menu-i main" id="bCreate" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : `방 만들기 <small>3-${pref.cls}반 · ${pref.mode === 'class' ? '전체' : '개인'} 모드</small>`}</button>
+          <button class="menu-i main" id="bCreate" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : `방 만들기 <small>${pref.seats}명 · ${pref.mode === 'class' ? '전체' : '개인'} 모드</small>`}</button>
           <button class="btn ghost small" id="bBackMenu">← 처음 화면</button>
         </div>
       </section>` : `<nav class="ts-menu" aria-label="시작 메뉴">
-        <button class="menu-i main" id="bNew" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : '새 수업 시작 <small>반 · 방식 고르기</small>'}</button>
-        ${canResume ? `<button class="menu-i" id="bResume">이어서 하기 <small>${esc(snap.meta.cls)}반 · ${snap.offline ? '비상 모드' : '방 ' + esc(snap.code)}</small></button>` : ''}
+        <button class="menu-i main" id="bNew" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : '새 수업 시작 <small>학생 수 · 방식 고르기</small>'}</button>
+        ${canResume ? `<button class="menu-i" id="bResume">이어서 하기 <small>${seatsOf(snap.meta)}명 · ${snap.offline ? '비상 모드' : '방 ' + esc(snap.code)}</small></button>` : ''}
         <button class="menu-i" id="bOffline" title="인터넷이 안 될 때: 학생 투표 없이 교사가 갈림길을 고른다">비상 모드 <small>인터넷 없이 · 전체</small></button>
         <button class="menu-i" id="bBoard" aria-expanded="${boardOpen}" aria-controls="tsBoard">반 기록판 <small>${board.length ? board.length + '개' : '아직 없음'}</small></button>
       </nav>`}
       <aside class="ts-board panel" id="tsBoard" ${boardOpen ? '' : 'hidden'} aria-label="반 기록판">
         <div class="lbl">반 기록판 <span class="dim">(이 컴퓨터에만 · 이름 · 번호 없음)</span></div>
-        ${board.length ? `<table class="board"><thead><tr><th>반</th><th>방식</th><th>결과</th><th>불빛</th></tr></thead><tbody>
-          ${board.map(b => `<tr><td>${esc(b.cls)}</td><td>${b.mode === 'class' ? '전체' : '개인'}</td><td>${esc(b.text)}</td><td>${b.lights ? '💡'.repeat(b.lights) : esc(b.lightsText || '')}</td></tr>`).join('')}</tbody></table>` : '<p class="dim">아직 기록이 없어요.</p>'}
+        ${board.length ? `<table class="board"><thead><tr><th>날짜</th><th>방식</th><th>결과</th><th>불빛</th></tr></thead><tbody>
+          ${board.map(b => `<tr><td class="num">${esc(when(b.at))}</td><td>${b.mode === 'class' ? '전체' : '개인'}</td><td>${esc(b.text)}</td><td>${b.lights ? '💡'.repeat(b.lights) : esc(b.lightsText || '')}</td></tr>`).join('')}</tbody></table>` : '<p class="dim">아직 기록이 없어요.</p>'}
         <p class="dim small">학생 이름 · 성별은 어디에도 저장하지 않아요. 방 코드 + 번호만 써요.</p>
       </aside>
       ${st.failed ? `<p class="errbox" role="alert">${esc(H.error)}<br>비상 모드로는 진행할 수 있어요.</p>` : ''}
     </div>
-    <footer class="ts-foot"><span>성적 미반영 · 학생 이름을 받지 않아요</span>${netMode().kind !== 'firebase' ? `<span class="ts-dev">시험 연결 ${esc(netMode().kind)} · ×${SPEED}</span>` : ''}<span class="ts-credit">글꼴 Noto Serif KR · OFL</span></footer>
+    <footer class="ts-foot"><span>성적 미반영 · 학생 이름을 받지 않아요</span>${soundSlot('ts')}${netMode().kind !== 'firebase' ? `<span class="ts-dev">시험 연결 ${esc(netMode().kind)} · ×${SPEED}</span>` : ''}<span class="ts-credit">글꼴 Noto Serif KR · OFL</span></footer>
     ${splashGone ? '' : `<div class="ts-splash ${ready ? 'ready' : ''}" id="tsSplash" role="button" tabindex="0" aria-label="시작 화면으로">
       ${kvHTML()}
       ${logoHTML('big', 'div')}
       <p class="sp-press">${ready || st.failed ? '화면을 누르면 시작' : '여는 중…'}</p></div>`}
   </div>`;
+  mountSoundSlots(stage);
   const seg = (id, key, num) => stage.querySelectorAll(`#${id} .segb`).forEach(b => b.onclick = () => {
-    const p = LS.get(LS_PREF, pref); p[key] = num ? Number(b.dataset.v) : b.dataset.v; LS.set(LS_PREF, p); renderStart(st);
+    prefSet({ [key]: num ? Number(b.dataset.v) : b.dataset.v }); renderStart(st);
     const again = stage.querySelector(`#${id} .segb[data-v="${b.dataset.v}"]`); if (again) again.focus({ preventScroll: true });
   });
-  seg('segCls', 'cls', true); seg('segMode', 'mode'); seg('segPace', 'pace');
+  seg('segMode', 'mode'); seg('segPace', 'pace');
+  // 학생 수: − / 숫자 / + 와 빠른 단추(20 · 24 · 26 · 28 · 30 · 32 · 35)
+  const setSeats = (n, focusSel) => {
+    prefSet({ seats: Math.min(MAX_NUM, Math.max(1, Math.round(n) || DEFAULT_SEATS)) }); renderStart(st);
+    const f = focusSel && stage.querySelector(focusSel); if (f && !f.disabled) f.focus({ preventScroll: true });
+  };
+  const onId = (id, f) => { const e = document.getElementById(id); if (e) e.onclick = f; };
+  onId('seatMinus', () => setSeats(prefGet().seats - 1, '#seatMinus'));
+  onId('seatPlus', () => setSeats(prefGet().seats + 1, '#seatPlus'));
+  stage.querySelectorAll('[data-seats]').forEach(b => b.onclick = () => setSeats(Number(b.dataset.seats), `[data-seats="${b.dataset.seats}"]`));
+  const iS = $('#iSeats');
+  if (iS) { iS.onchange = () => setSeats(Number(iS.value), '#iSeats'); iS.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); iS.blur(); } }; }
   const on = (id, f) => { const e = document.getElementById(id); if (e) e.onclick = f; };
   on('bCreate', () => createRoom());
-  on('bNew', () => { startStep = 'setup'; boardOpen = false; renderStart(st); const f = stage.querySelector('#segCls .segb.on') || stage.querySelector('#segCls .segb'); if (f) f.focus({ preventScroll: true }); });
+  on('bNew', () => { startStep = 'setup'; boardOpen = false; renderStart(st); const f = $('#iSeats'); if (f) f.focus({ preventScroll: true }); });
   on('bBackMenu', () => { startStep = 'menu'; renderStart(st); const f = $('#bNew'); if (f) f.focus({ preventScroll: true }); });
   on('bOffline', () => startOffline());
   on('bBoard', () => { boardOpen = !boardOpen; $('#tsBoard').hidden = !boardOpen; $('#bBoard').setAttribute('aria-expanded', String(boardOpen)); });
@@ -154,7 +188,7 @@ function renderStart(st) {
 }
 
 async function createRoom() {
-  const pref = LS.get(LS_PREF, { cls: 1, mode: 'class', pace: 'normal' });
+  const pref = prefGet();
   const btn = $('#bCreate'); btn.disabled = true; btn.textContent = '만드는 중…';
   try {
     let code = null;
@@ -164,7 +198,7 @@ async function createRoom() {
       if (!ex) code = c;
     }
     if (!code) throw new Error('빈 방 코드를 찾지 못했어요');
-    const meta = { host: H.net.uid, createdAt: H.net.TS, cls: `3-${pref.cls}`, mode: pref.mode, phase: 'lobby', version: 1 };
+    const meta = { host: H.net.uid, createdAt: H.net.TS, cls: seatLabel(pref.seats), mode: pref.mode, phase: 'lobby', version: 1 };   // 학생 수는 cls 칸에 「24명」(규칙이 새 칸을 막음)
     await H.net.withTimeout(H.net.set(`${ROOT}/${code}/meta`, meta), 8000, '방 만들기');
     H.code = code; H.offline = false;
     H.meta = { ...meta, createdAt: Date.now() };
@@ -188,10 +222,10 @@ function resetGame() {
 }
 
 function startOffline() {
-  const pref = LS.get(LS_PREF, { cls: 1, mode: 'class', pace: 'normal' });
+  const pref = prefGet();
   if (!confirm('비상 모드(인터넷 없이)로 시작할까요?\n학생 투표는 받지 않고, 교사가 손 든 수를 보고 갈림길을 고릅니다.')) return;
   H.offline = true; H.code = null;
-  H.meta = { host: 'local', createdAt: Date.now(), cls: `3-${pref.cls}`, mode: 'class', phase: 'play', version: 1 };
+  H.meta = { host: 'local', createdAt: Date.now(), cls: seatLabel(pref.seats), mode: 'class', phase: 'play', version: 1 };
   H.pace = pref.pace || 'normal';
   resetGame();
   saveSnap();
@@ -250,7 +284,7 @@ function subscribeRoom() {
 // 같은 번호가 둘이면 나중에 들어온 기기를 받고 앞의 것은 내보낸다(2분 안에 3번째로 바뀌면 자동으로 안 하고 알린다)
 function present() {
   return Object.entries(H.players)
-    .filter(([u, p]) => p && Number.isInteger(p.num) && p.num >= 1 && p.num <= MAX_NUM && !H.kicked[u])
+    .filter(([u, p]) => p && Number.isInteger(p.num) && p.num >= 1 && p.num <= seatsOf(H.meta) && !H.kicked[u])
     .map(([uid, p]) => ({ uid, ...p }));
 }
 function onPlayers() {
@@ -450,7 +484,7 @@ async function runVote(id, labels, cands, round, ms, my) {
   const n = S.NODES[id];
   const key = voteKey(id, round);
   H.inputs = {};
-  H.vote = { id, key, cands, round, labels, deadline: now() + ms / SPEED, closed: false, early: false };
+  H.vote = { id, key, cands, round, labels, deadline: now() + ms / SPEED, total: ms / SPEED, closed: false, early: false };
   pub({ ph: 'vote', chip: chipOf(n), vote: { id, key, q: n.q, labels, cands, round, deadline: H.vote.deadline }, inputKey: key });
   if (H.inputsOff) H.inputsOff();
   H.inputsOff = H.net.on(roomP(`inputs/${key}`), v => { H.inputs = v || {}; checkAllIn(); if (H.view.kind === 'vote') renderVoteCount(); }, () => {});
@@ -547,7 +581,7 @@ function endCard(id) {
   H.view = { kind: 'endcard', id };
   pub({ ph: 'endcard', chip: '졸업식', end: { id, name: n.name, lights: l } });
   const board = LS.get(LS_BOARD, []);
-  board.push({ cls: H.meta.cls, mode: 'class', text: `E${n.no} ${n.name}`, lights: l, at: Date.now() });
+  board.push({ mode: 'class', text: `E${n.no} ${n.name}`, lights: l, at: Date.now() });
   LS.set(LS_BOARD, board.slice(-60));
   render();
 }
@@ -591,7 +625,7 @@ async function closeClass() {
   }
   LS.del(LS_SNAP);
   Object.assign(H, { code: null, meta: null, offline: false, run: null, pos: null, view: {}, solo: {}, refl: {}, players: {} });
-  startStep = 'menu';
+  startStep = 'menu'; fxKey = ''; H.ecShown = null;
   renderStart({});
 }
 
@@ -602,7 +636,7 @@ function soloRecords() {
   for (const [u, r] of Object.entries(H.solo || {})) {
     const p = H.players[u] || {};
     const num = p.num || H.numOf[u];          // 기기를 바꿔 자리가 지워진 옛 기록도 번호로 센다
-    if (!num || !r || typeof r.st !== 'number') continue;
+    if (!num || num > seatsOf(H.meta) || !r || typeof r.st !== 'number') continue;
     const cur = byNum[num];
     const score = (r.e ? 100 : 0) + r.st;
     if (!cur || score > cur.score || (score === cur.score && (p.joinedAt || 0) > (cur.at || 0))) byNum[num] = { ...r, score, at: p.joinedAt };
@@ -643,7 +677,7 @@ function recordSoloBoard() {
   if (!st.n) return;
   const top = Object.entries(st.ends).sort((a, b) => b[1] - a[1])[0];
   const board = LS.get(LS_BOARD, []);
-  board.push({ cls: H.meta.cls, mode: 'solo', text: `${st.n}명 졸업 · 가장 많은 엔딩 E${top[0].slice(1)}`, lightsText: `💡💡💡 ${st.lights[3]}명`, at: Date.now() });
+  board.push({ mode: 'solo', text: `${st.n}명 졸업 · 가장 많은 엔딩 E${top[0].slice(1)}`, lightsText: `💡💡💡 ${st.lights[3]}명`, at: Date.now() });
   LS.set(LS_BOARD, board.slice(-60));
 }
 function onRefl() { if (H.view.kind === 'refl' || H.view.kind === 'solo') render(); else renderBar(); }
@@ -655,7 +689,7 @@ function renderBar() {
   const cls = m && m.mode === 'class' && m.phase === 'play' && !['endcard', 'refl'].includes(H.view.kind);
   $('#bar').innerHTML = `
     <span class="b-title">${emblemHTML()}<span>손잡이 동아리</span></span>
-    ${m ? `<span class="b-chip">${esc(m.cls)}반 · ${m.mode === 'class' ? '전체 모드' : '개인 모드'}</span>` : ''}
+    ${m ? `<span class="b-chip mode">${seatsOf(m)}명 · ${m.mode === 'class' ? '전체 모드' : '개인 모드'}</span>` : ''}
     ${H.code ? `<span class="b-chip strong">방 <b class="num">${esc(H.code)}</b></span>` : ''}
     ${m && !H.offline ? `<span class="b-chip" id="pplChip">👥 <b class="num">${ppl}</b>명</span>` : ''}
     ${H.offline ? '<span class="b-conn off"><i></i>비상 모드(인터넷 없이)</span>' : m ? `<span class="b-conn ${H.connected ? 'ok' : 'bad'}"><i></i>${H.connected ? '연결됨' : '끊김'}</span>` : ''}
@@ -665,10 +699,12 @@ function renderBar() {
       <button class="b-btn" id="bNext" title="다음 줄 · 다음 단계로 (오른쪽 화살표 · 스페이스)">다음 ▶</button>
       <span class="b-pace" role="group" aria-label="글 속도">${[['slow', '느리게'], ['normal', '보통'], ['fast', '빠르게']].map(([k, l]) => `<button class="b-btn ${H.pace === k ? 'on' : ''}" data-pace="${k}">${l}</button>`).join('')}</span>
       <button class="b-btn" id="bPick">교사가 정하기</button>` : ''}
+    ${soundSlot('bar')}
     ${m ? '<button class="b-btn" id="bFull" title="전체 화면">⛶</button><button class="b-btn danger" id="bEnd">수업 끝</button>' : ''}`;
+  mountSoundSlots($('#bar'));
   const b = id => document.getElementById(id);
   if (b('bPause')) b('bPause').onclick = togglePause;
-  if (b('bNext')) b('bNext').onclick = next;
+  if (b('bNext')) b('bNext').onclick = e => advance('button', e);
   if (b('bPick')) b('bPick').onclick = () => {
     if (!['think', 'vote', 'offline-pick'].includes(H.view.kind)) { toast('갈림길(생각 시간 · 투표)에서 쓸 수 있어요'); return; }
     H.picker = !H.picker; render();
@@ -701,6 +737,7 @@ function joinURL() {
 
 function renderLobby() {
   H.view = { kind: 'lobby' };
+  music('open');
   const nums = {};
   for (const p of present()) nums[p.num] = nums[p.num] || p.on;
   const n = Object.values(nums).filter(Boolean).length;
@@ -712,7 +749,7 @@ function renderLobby() {
       <p class="lead">크롬북에서 위 주소 → 방 코드 + 내 번호. 이름은 넣지 않아요.</p>
       <div class="pv-row"><button class="btn big" id="bStart">${H.meta.mode === 'class' ? '이야기 시작 ▶' : '개인 모드 시작 ▶'}</button><span class="dim">지금 <b class="num">${n}</b>명</span></div>
     </div>
-    <div class="lobby-r"><div class="numgrid">${Array.from({ length: MAX_NUM }, (_, i) => i + 1).map(k => `<span class="ng ${nums[k] ? 'on' : nums[k] === false ? 'off' : ''}">${k}${nums[k] ? '<i>✓</i>' : ''}</span>`).join('')}</div>
+    <div class="lobby-r"><div class="numgrid ${seatsOf(H.meta) > 60 ? 'lots' : seatsOf(H.meta) > 30 ? 'many' : ''}">${Array.from({ length: seatsOf(H.meta) }, (_, i) => i + 1).map(k => `<span class="ng ${nums[k] ? 'on' : nums[k] === false ? 'off' : ''}">${k}${nums[k] ? '<i>✓</i>' : ''}</span>`).join('')}</div>
       <p class="dim small">✓ 접속 · 흐린 칸 = 아직 · 줄 친 칸 = 끊김</p></div>
   </div>`;
   $('#bStart').onclick = () => {
@@ -733,7 +770,9 @@ function renderPlay() {
     if (v.k === 'after') { const opt = n.opts[run.ch[v.id] - 1]; if (opt && opt.bg) bg = opt.bg; }
     if (v.k === 'ending') { cg = cgKey(v.id, run.g); if (cg) cast = []; }
   } else if (v.kind === 'title') {
-    overlay = `<div class="ov-title"><div class="ov-when">${esc(n.when || '')}</div><div class="ov-name">${esc(n.title || '')}</div></div>`;
+    if (v.big == null) { const ch = chapterOf(n.when); v.big = !!ch.grade && ch.grade !== H.lastGrade; }
+    const big = v.big;
+    overlay = `<div class="ov-title ${big ? 'big' : ''}"><div class="fc-band"><span class="ov-when">${esc(n.when || '')}</span><b class="ov-name">${esc(n.title || '')}</b></div></div>`;
   } else if (v.kind === 'think' || v.kind === 'vote' || v.kind === 'offline-pick' || v.kind === 'tally' || v.kind === 'dice') {
     overlay = voteOverlay(v, n);
   } else if (v.kind === 'fx') {
@@ -748,8 +787,9 @@ function renderPlay() {
   if (['title', 'think', 'vote', 'offline-pick', 'tally', 'dice'].includes(v.kind)) cast = [];
   let hp = stage.querySelector(':scope > .host-play');
   if (!hp) { stage.innerHTML = '<div class="host-play"><div class="hp-stage"></div><div class="hp-extra"></div></div>'; hp = stage.firstElementChild; }
-  renderStage(hp.querySelector('.hp-stage'), { bg, tint: n.tint, cg, cast, speaker, run, chip: n.type === 'ending' ? `졸업식 · ${n.name}` : chipOf(n), hud: st, delta, notes, overlay,
-    boxHTML: v.kind === 'lines' ? boxHTML(lines, shown, { keep: 6 }) : '', cls: 'big' });
+  const isCg = v.kind === 'lines' && v.k === 'ending' && !!cg;
+  const rebuilt = renderStage(hp.querySelector('.hp-stage'), { bg, tint: n.tint, cg, cast, speaker, run, when: n.when, romance: !!n.rel, chip: n.type === 'ending' ? `졸업식 · ${n.name}` : chipOf(n), hud: st, delta, notes, overlay,
+    boxHTML: v.kind === 'lines' ? boxHTML(lines, shown, isCg ? { keep: 2, cls: 'cg-box', head: cgHead(n) } : { keep: 6 }) : '', cls: 'big' });
   hp.querySelector('.hp-extra').innerHTML = `${H.picker && ['think', 'vote', 'offline-pick'].includes(v.kind) ? pickerHTML(n) : ''}
     ${!H.auto ? '<div class="paused-tag" role="status">⏸ 멈춤 — 「다음 ▶」으로 한 줄씩</div>' : ''}`;
   stage.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => teacherDecide(Number(b.dataset.pick)));
@@ -758,7 +798,61 @@ function renderPlay() {
   if (v.kind === 'dice') animateDice(v);
   if (v.kind === 'vote') { renderTimer(); renderVoteCount(); }
   if (v.kind === 'think' && v.until) thinkTimer(v);
+  playFx(v, n, hp.querySelector('.hp-stage'), rebuilt, delta, notes);
 }
+
+// ── 소리 · 효과(그릴 때마다 부르되, 같은 순간에는 한 번만) ─────────────
+let fxKey = '';
+function playFx(v, n, st, rebuilt, delta, notes) {
+  const run = H.run;
+  if (v.kind === 'lines' && v.k === 'ending') music('end');
+  else music('main', moodOf(v.id, n, v.k, v.k === 'after' && n.opts ? n.opts[run.ch[v.id] - 1] : null));
+  const key = [v.kind, v.id, v.k || '', v.shown || 0, v.round || 0, v.how || '', v.pick || 0, v.title ? 1 : 0, v.until ? 1 : 0].join('|');
+  if (key === fxKey) return;
+  fxKey = key;
+  if (rebuilt && !['lines', 'title'].includes(v.kind)) sfx('whoosh');
+  if (v.kind === 'title') { sfx('chapter'); const ch = chapterOf(n.when); if (ch.grade) H.lastGrade = ch.grade; }
+  else if (v.kind === 'lines') {
+    const line = v.lines[v.shown - 1];
+    const f = lineFx(line, !!(n.rel || n.slot));
+    typewrite(st, { speed: SPEED, key: f.key });
+    if (v.k === 'ending' && v.shown === 1) endingReveal(st);
+    else if (rebuilt) sfx('whoosh');
+    else sfx('tick');
+    emphasize(st, f);
+    if (f.shake) shake(st);
+    if (f.tech) techBurst(st, f.water);
+    if (f.emote && line && line.role) emote(st, line.role, f.emote);
+    hintOnce('vn.hint.host', '화면을 눌러도 다음 줄로 넘어가요 (스페이스 · →)');
+  } else if (v.kind === 'think') { if (!v.title) sfx('select'); else sfx('slide'); }
+  else if (v.kind === 'vote') { H.countLast = null; sfx('voteOpen'); sfx('slide'); }
+  else if (v.kind === 'tally') {
+    if (v.how === 'retie') sfx('tie');
+    else tallyDrama(st, (v.labels || []).length || 3);
+  } else if (v.kind === 'dice') sfx('dice', { dur: T.dice / SPEED * 0.8 / 1000 });
+  else if (v.kind === 'fx') {
+    floatChips(st, delta, S.SHOWN);
+    if (notes && notes.length) setTimeout(() => sfx('note'), 380);
+  }
+}
+
+// ── 화면을 눌러도 다음으로(대사 · 장면 제목 · 지표 변화에서만 — 갈림길 · 투표 · 결과는 넘기지 않음) ──
+let lastAdv = 0;
+const ADV_KINDS = ['lines', 'title', 'fx'];
+function advance(src, e) {
+  if (e && (e.repeat || e.detail > 1)) return;   // 키 누르고 있기 · 두 번 누름의 둘째는 무시
+  const t = performance.now();
+  if (e && e.isTrusted && t - lastAdv < 250) return;   // 진짜 손가락 · 키 연타(250ms 안)는 한 번만
+  lastAdv = t;
+  if (twBusy()) { twFinish(); return; }       // 글자를 찍는 중이면 먼저 다 보여 준다(이것도 한 번 누름으로 센다)
+  next();
+}
+stage.addEventListener('click', e => {
+  if (!H.meta || H.meta.mode !== 'class' || H.meta.phase !== 'play') return;
+  if (!ADV_KINDS.includes(H.view.kind)) return;
+  if (!isAdvanceClick(e)) return;
+  advance('click', e);
+});
 
 function voteOverlay(v, n) {
   const labels = v.labels || S.optionLabels(n, H.run);
@@ -798,6 +892,8 @@ function renderTimer() {
   const left = Math.max(0, Math.ceil((H.vote.deadline - now()) / 1000 * SPEED));
   el.textContent = `${left}초`;
   el.classList.toggle('hurry', left <= 5);
+  el.style.setProperty('--p', H.vote.total ? Math.max(0, Math.min(1, (H.vote.deadline - now()) / H.vote.total)).toFixed(3) : 1);
+  if (H.countLast !== left) { H.countLast = left; countdown(left, stage.querySelector('.ov-vote')); }
 }
 function renderVoteCount() {
   const el = document.getElementById('voCount');
@@ -827,7 +923,7 @@ function animateDice(v) {
     el.textContent = `🎲 ${CIRCLED[c]}`;
     rows.forEach(r => r.classList.toggle('roll', Number(r.dataset.c) === c));
     if (elapsed < dur) setTimeout(step, 120 + elapsed / dur * 200);
-    else rows.forEach(r => r.classList.toggle('win', Number(r.dataset.c) === v.pick));
+    else { rows.forEach(r => r.classList.toggle('win', Number(r.dataset.c) === v.pick)); sfx('diceStop'); winBurst(stage.querySelector('.vo-row.win'), true); }
   };
   step();
 }
@@ -881,6 +977,8 @@ function renderEndCard() {
     <div class="pv-row"><button class="btn big" id="bRefl">생각 정리(성찰) 열기 ▶</button></div>
   </div>`;
   $('#bRefl').onclick = openRefl;
+  music('end');
+  if (H.ecShown !== id) { H.ecShown = id; sfx('reveal'); confetti(stage.querySelector('.ec-head'), 30, { paper: true }); }
 }
 
 function reflItems() {
@@ -919,6 +1017,7 @@ function bindWall() {
   });
 }
 function renderReflWall() {
+  music('end');
   stage.innerHTML = `<div class="refl-host">${reflWallHTML()}
     <div class="pv-row"><button class="btn ghost" id="bBack">← ${H.meta.mode === 'class' ? '엔딩 카드' : '반 통계'}로</button><button class="btn" id="bEnd2">수업 끝(방 지우기)</button></div></div>`;
   bindWall();
@@ -928,6 +1027,7 @@ function renderReflWall() {
 
 function renderSolo() {
   H.view = { kind: 'solo' };
+  music(H.meta.phase === 'play' ? 'main' : 'end');
   const st = soloStats();
   const phase = H.meta.phase;
   const reflN = Object.keys(H.refl || {}).filter(u => !H.hidden[u]).length;
@@ -937,7 +1037,7 @@ function renderSolo() {
       <div class="sh-grades">${[1, 2, 3, 4].map(g => `<div class="gcol"><div class="gbar"><i style="height:${st.people ? st.grade[g] / st.people * 100 : 0}%"></i></div><b class="num">${st.grade[g]}</b><span>${GRADE_LABEL[g]}</span></div>`).join('')}</div>
       <div class="sh-board"><div class="lbl">엔딩 판 <span class="dim">(첫 엔딩만 · 이름 없음)</span></div>
         <div class="eboard">${S.ENDING_IDS.map(e => `<div class="ecell ${st.ends[e] ? 'got' : ''}"><b>${S.NODES[e].no}</b><span>${esc(S.NODES[e].name)}</span><em class="num">${st.ends[e] || ''}</em></div>`).join('')}</div>
-        <p class="dim">졸업 <b class="num">${st.n}</b>명 · 불빛 ${[3, 2, 1].map(k => `${'💡'.repeat(k)} ${st.lights[k]}`).join(' · ')} · 성찰 ${reflN}명</p>
+        <p class="dim">졸업 <b class="num">${st.n}</b> / ${seatsOf(H.meta)}명 · 불빛 ${[3, 2, 1].map(k => `${'💡'.repeat(k)} ${st.lights[k]}`).join(' · ')} · 성찰 ${reflN}명</p>
         <div class="pv-row"><button class="btn big" id="bGrad">모두 졸업! → 반 통계 ▶</button></div></div>
     </div>`;
     $('#bGrad').onclick = () => { setMeta({ phase: 'stats' }); H.core = { ...H.core, ph: 'stats' }; U({ 'state/c': JSON.stringify(H.core) }); render(); };
@@ -974,7 +1074,15 @@ function toast(msg, bad = false) {
 
 document.addEventListener('keydown', e => {
   if (!H.meta || H.meta.mode !== 'class' || /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
-  if (e.key === 'ArrowRight' || (e.key === ' ' && document.activeElement === document.body)) { e.preventDefault(); next(); }
+  const ae = document.activeElement;
+  const field = ae.closest && ae.closest('input, select, textarea, [contenteditable], [role="slider"]');   // → 는 입력 칸 · 크기 막대에서만 양보
+  const free = ae === document.body || !ae.closest('button, a, input, select, textarea, [role="button"]');  // 스페이스 · Enter 는 단추 위에서 양보(단추 자체가 눌린다)
+  if ((e.key === 'ArrowRight' && !field && (free || ae.id === 'bNext')) || ((e.key === ' ' || e.key === 'Enter') && free)) {   // → 도 단추 · 설정 위에서는 양보(「다음」 단추만 예외)
+    e.preventDefault();
+    if (e.repeat) return;
+    if (ADV_KINDS.includes(H.view.kind)) advance('key', e);
+    else if (e.key !== 'Enter') next();      // 생각 시간 건너뛰기 등은 예전처럼(→ · 스페이스만)
+  }
   if (e.key === 'p' || e.key === 'P') togglePause();
 });
 window.addEventListener('beforeunload', e => {
@@ -982,6 +1090,9 @@ window.addEventListener('beforeunload', e => {
 });
 
 // 시험용 손잡이
+// 시험 · 시연용: 효과를 바로 띄워 보기(얼굴 가림 검사에 쓴다)
+H.fx = { emote: (role, k) => emote(stage.querySelector('.hp-stage'), role, k), bloom: () => bloom(stage.querySelector('.hp-stage')), shake: () => shake(stage.querySelector('.hp-stage')), tech: w => techBurst(stage.querySelector('.hp-stage'), w),
+  chips: d => floatChips(stage.querySelector('.hp-stage'), d, S.SHOWN), twBusy, card: (w, t, b) => chapterCard(stage.querySelector('.hp-stage'), w, t, b), tally: () => tallyDrama(stage, 3), count: l => countdown(l, null), ending: () => endingReveal(stage.querySelector('.hp-stage')), emph: f => emphasize(stage.querySelector('.hp-stage'), f) };
 H.api = { next, togglePause, teacherDecide, closeClass: () => { window.confirm = () => true; return closeClass(); }, openRefl, setPace };
 
 boot();

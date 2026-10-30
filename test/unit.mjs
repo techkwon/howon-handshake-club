@@ -7,6 +7,9 @@ import {
 import { countVotes, resolveVote, rollDice } from '../src/vote.js';
 import { estimateRun, T } from '../src/flow.js';
 import { ENDING_PATHS, P } from './paths.mjs';
+import { TRACKS, MAIN_IDS, parseMel, chordOf, midiOf } from '../src/sound.js';
+import { moodOf, weatherOf, lineFx, isAdvanceClick, chapterOf, CAP } from '../src/fx.js';
+import { seatsOf, seatLabel, MAX_NUM } from '../src/shared.js';
 
 let pass = 0, fail = 0;
 const fails = [];
@@ -231,6 +234,51 @@ const timing = {};
       ok(ties4 <= 35, `${e}-${g} 동률 4번이어도 ${ties4.toFixed(1)}분 ≤ 35`);
     }
   }
+}
+
+// ── 소리 · 효과 · 학생 수 (2026-10-30) ─────────────────────────
+{
+  eq(Object.keys(TRACKS).sort(), ['end', 'm1', 'm2', 'm3', 'open'], '곡 5개(여는 곡 · 본 곡 3 · 엔딩 곡)');
+  eq(MAIN_IDS, ['m1', 'm2', 'm3'], '교사가 고르는 본 곡 3개');
+  const sig = {};
+  for (const [id, t] of Object.entries(TRACKS)) {
+    const ch = t.chords.split(' ');
+    eq(ch.length, t.mel.length, `${id} 화음 수 = 선율 마디 수`);
+    t.mel.forEach((m, i) => { const p = parseMel(m); ok(Math.abs(p.len - t.beats) < 1e-9, `${id} ${i + 1}마디 박 수 ${p.len} = ${t.beats}`); p.notes.forEach(n => ok(n.midi >= 55 && n.midi <= 90, `${id} ${i + 1}마디 음 높이 ${n.midi}`)); });
+    ch.forEach(c => { const x = chordOf(c); ok(x.bass >= 33 && x.bass <= 47 && x.tones.every(m => m >= 53 && m <= 80), `${id} 화음 ${c} 음역`); });
+    const sec = 60 / t.bpm * t.beats * ch.length;
+    ok(sec >= 30 && sec <= 75, `${id} 한 바퀴 ${sec.toFixed(1)}초 (30~75초)`);
+    sig[id] = `${t.voice}|${t.bpm}|${t.beats}|${t.mel.slice(0, 4).join()}`;
+  }
+  ok(new Set(MAIN_IDS.map(id => TRACKS[id].voice)).size === 3, '본 곡 3개는 악기가 다르다');
+  ok(new Set(MAIN_IDS.map(id => TRACKS[id].bpm)).size === 3, '본 곡 3개는 빠르기가 다르다');
+  ok(new Set(Object.values(sig)).size === 5, '곡 5개 첫 선율이 모두 다르다');
+  eq(midiOf('A4'), 69, '음 이름 A4 = 69'); eq(chordOf('D/F#').bass % 12, 6, 'D/F# 베이스는 F#');
+  // 분위기 · 날씨
+  eq(moodOf('S9', NODES.S9), 'tension', 'S9 고장 사건 = 긴장');
+  eq(moodOf('S5', NODES.S5), 'night', 'S5 밤 = 밤');
+  eq(moodOf('S1', NODES.S1), 'day', 'S1 동아리 = 낮');
+  eq(moodOf('V3', NODES.V3, 'after', NODES.V3.opts[1]), 'tension', '⚠ 선택 결과 = 긴장');
+  eq(weatherOf('roof'), ['rain', 'glint'], '빗물 탱크 = 비 + 물 반짝'); eq(weatherOf('snow'), ['snow', 'puff'], '눈 길 = 눈 + 눈 뭉치'); eq(weatherOf('club', 'night'), ['night'], '밤 동아리 = 반딧불 · 별');
+  eq(weatherOf('field'), ['petals', 'rays'], '운동장 = 꽃잎 + 햇살'); eq(weatherOf('snow', null, true), ['snow', 'puff', 'bokeh'], '설렘 장면 = 분홍 빛망울 더함');
+  ok(lineFx({ role: 'A', face: 1, text: '같이 하자!' }).ex, '느낌표 줄 = 톡'); ok(lineFx({ text: '내가 누구에게 건네려던 편지였더라?' }).whisper, '혼잣말 물음 = 속마음');
+  eq(lineFx({ text: '지붕에 홈통을 잇고 빗물 탱크까지 만들었다.' }).key, '빗물 탱크', '기술 낱말 찾기');
+  ok(lineFx({ text: '바퀴가 돌더니 전구에 반짝 불이 켜졌다.' }).tech && !lineFx({ text: '바퀴가 돌더니 전구에 반짝 불이 켜졌다.' }).water, '불 켜짐 = 기술(물 아님)');
+  eq(chapterOf('중2 · 12월').season, '겨울', '12월 = 겨울'); eq(chapterOf('중3 · 4월').grade, '중3', '학년 읽기');
+  ok(lineFx({ text: '중3 7월. 루미타에서 다급한 연락이 왔다.' }).shake, '다급 → 흔들림');
+  ok(lineFx({ text: '바퀴가 돌더니 전구에 반짝 불이 켜졌다.' }).tech, '불이 켜짐 → 빛 터짐');
+  eq(CAP, { hi: 120, mid: 50, lo: 0, off: 0 }, '알갱이 상한 상 120 · 중 50 · 하 0 · 끄기 0');
+  eq(lineFx({ role: 'A', face: 1, text: '같이 하자!' }, true).emote, 'heart', '설렘 장면 다정한 말 = ♡(머리 옆)'); eq(lineFx({ role: 'A', face: 1, text: '눈이 온다.' }, true).emote, 'spark', '설렘 장면 그 밖 = 반짝이');
+  eq(lineFx({ role: 'A', face: 0, text: '사실… 무서웠어' }, true).emote, null, '설렘 장면에는 땀방울 없음');
+  // 클릭 넘기기 판정(단추 · 두 번 누름 제외)
+  const el = sel => ({ closest: s => (s.split(',').some(x => x.trim() === sel) ? {} : null) });
+  ok(isAdvanceClick({ button: 0, detail: 1, target: el('div') }), '빈 곳 누름 = 넘김');
+  ok(!isAdvanceClick({ button: 0, detail: 1, target: el('button') }), '단추 누름 ≠ 넘김');
+  ok(!isAdvanceClick({ button: 0, detail: 2, target: el('div') }), '두 번 누름의 둘째 ≠ 넘김');
+  // 학생 수(meta.cls 「24명」)
+  eq(seatsOf({ cls: seatLabel(24) }), 24, '24명 → 24'); eq(seatsOf({ cls: '3-4' }), MAX_NUM, '옛 반 이름 → 99(막지 않음)');
+  eq(seatsOf({ cls: '45명' }), 45, '45명 → 45'); eq(seatsOf({ cls: '100명' }), MAX_NUM, '100명 → 99(못 읽으면 막지 않음)'); eq(MAX_NUM, 99, '번호 끝 99(규칙과 같음)'); eq(seatsOf(null), MAX_NUM, '없으면 30');
+  ok(seatLabel(99).length <= 10, '규칙: cls 는 10자 이하');
 }
 
 console.log(`단위 시험: 통과 ${pass} · 실패 ${fail}`);

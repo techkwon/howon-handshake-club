@@ -1,7 +1,15 @@
 // 진행판 · 크롬북이 함께 쓰는 작은 도구 (DOM 없음 → node 시험 가능)
 
 export const ROOT = 'vn/rooms';          // 대결 판의 /rooms 와 섞이지 않게 따로 둔다
-export const MAX_NUM = 30;
+export const MAX_NUM = 99;   // 번호 1~99(규칙 /vn 자리 번호도 1~99 · 2026-10-30 교사 요청 「30명 넘는 반도 있어」)
+export const DEFAULT_SEATS = 28;
+/** 학생 수(교사가 정함 1~99)는 meta.cls 에 「24명」처럼 적는다(규칙이 새 칸을 막아 둔 것 — 짧은 글 칸을 쓴다). 못 읽으면 막지 않는다(99) */
+export function seatsOf(meta) {
+  const m = meta && /^(\d{1,2})명$/.exec(String(meta.cls || ''));
+  const n = m ? Number(m[1]) : MAX_NUM;
+  return n >= 1 && n <= MAX_NUM ? n : MAX_NUM;
+}
+export const seatLabel = n => `${n}명`;
 export const DAY_MS = 24 * 3600 * 1000;
 export const MAX_REFL = 200;             // 성찰 한 칸 글자 수(규칙은 300까지 받는다)
 

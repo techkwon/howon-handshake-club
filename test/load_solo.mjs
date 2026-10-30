@@ -1,5 +1,5 @@
-// 개인 모드 시험: 진행판 1 + 크롬북 N(기본 30)이 각자 다른 길로 끝까지 — 가짜 DB(규칙 적용)
-//   node test/load_solo.mjs [--n 30] [--no-shots]
+// 개인 모드 시험: 진행판 1 + 크롬북 N(기본 24 · 학생 수도 N)이 각자 다른 길로 끝까지 — 가짜 DB(규칙 적용)
+//   node test/load_solo.mjs [--n 24] [--no-shots]
 // 확인: 엔딩 10개 모두 실제 화면으로 닿음(남 · 여 · 랜덤) · 진행판 진행 막대 · 엔딩 판 · 중간에 새로 고침해도 이어서 ·
 //       2회차는 반 통계에 안 들어감 · DB 에는 숫자만(성별 · 이름 없음) · 「모두 졸업!」 뒤 못 끝낸 학생은 「선생님 화면」 ·
 //       성찰 모음 · 수업 끝 = 방 지움
@@ -9,7 +9,7 @@ import { launch, startServers, openHost, openStudent, waitFor, sleep, arg, here,
 import { ENDING_PATHS } from './paths.mjs';
 import { endingOf, lightsOf, statsOf, NODES } from '../src/story.js';
 
-const N = Number(arg('n', 30));
+const N = Number(arg('n', 24));
 const SHOTS = !arg('no-shots', false);
 const SHOT_DIR = path.join(here, 'shots');
 fs.mkdirSync(SHOT_DIR, { recursive: true });
@@ -21,7 +21,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
 
 const browser = await launch(!arg('headed', false));
 const srv = await startServers({ mockPort: 8798, webPort: 8099 });
-const host = await openHost(browser, srv, { mode: 'solo' });
+const host = await openHost(browser, srv, { mode: 'solo', seats: N });
 const H = host.page;
 log(`방 ${host.code}`);
 

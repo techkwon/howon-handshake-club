@@ -1,5 +1,5 @@
-// 전체 모드 부하 · 흐름 시험: 진행판 1 + 크롬북 N(기본 30) — 가짜 DB(규칙 적용)
-//   node test/load_class.mjs [--n 30] [--speed 4] [--headed] [--no-shots]
+// 전체 모드 부하 · 흐름 시험: 진행판 1 + 크롬북 N(기본 24 · 학생 수도 N 으로 설정) — 가짜 DB(규칙 적용)
+//   node test/load_class.mjs [--n 24] [--speed 4] [--headed] [--no-shots]
 // 시나리오: 25명으로 시작 → V0 동률 → 다시 투표 동률 → 🎲 / V3 동률 → 다시 투표로 결정 / 늦게 온 5명(1명은 같은 번호 → 앞 기기 내보냄)
 //          V4 중 3명 연결 끊김 + 2명 새로 고침 / V6 아무도 안 냄 → 🎲 / V9 교사가 정하기 / 엔딩 → 성찰 → 가리기 → 수업 끝(방 지움)
 import fs from 'node:fs';
@@ -7,7 +7,7 @@ import path from 'node:path';
 import { launch, startServers, openHost, openStudent, waitFor, sleep, arg, here, dump, drop, stats, tap } from './lib.mjs';
 import { endingOf, CHOICE_IDS } from '../src/story.js';
 
-const N = Number(arg('n', 30));
+const N = Number(arg('n', 24));
 const SPEED = Number(arg('speed', 4));
 const SHOTS = !arg('no-shots', false);
 const SHOT_DIR = path.join(here, 'shots');
@@ -20,7 +20,7 @@ const log = m => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${m}`)
 
 const browser = await launch(!arg('headed', false));
 const srv = await startServers({ mockPort: 8797, webPort: 8098 });
-const host = await openHost(browser, srv, { mode: 'class', speed: SPEED });
+const host = await openHost(browser, srv, { mode: 'class', speed: SPEED, seats: N });
 const H = host.page;
 log(`방 ${host.code}`);
 const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(SHOT_DIR, name + '.png') }); };
@@ -36,6 +36,25 @@ log(`학생 ${firstN}명 들어옴`);
 await waitFor(() => H.evaluate(n => Object.values(window.__vnHost.players).filter(p => p.on).length >= n, firstN), { what: '진행판에 모두 보임' });
 await shot(H, 'class_host_lobby');
 await shot(studs[0].page, 'class_student_lobby');
+// 학생 수(N) — 대기실 번호 칸 N개 · N+1 번은 못 들어옴 · 전체 모드 크롬북은 소리 잠금
+ok(await H.evaluate(() => document.querySelectorAll('.numgrid .ng').length) === N, `대기실 번호 칸 ${N}개`);
+ok(await H.evaluate(n => document.querySelector('#bar').textContent.includes(n + '명'), N), `머리띠에 「${N}명」`);
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const pg = await ctx.newPage();
+  await pg.goto(`${srv.base}/?mock=${encodeURIComponent(srv.mockURL)}&code=${host.code}`);
+  await pg.waitForSelector('#iNum', { timeout: 20000 });
+  await pg.evaluate(n => { document.querySelector('#iNum').value = String(n); document.querySelector('#joinF').requestSubmit(); }, N + 1);
+  const msg = await waitFor(() => pg.evaluate(() => { const e = document.querySelector('.errbox'); return e && !e.hidden && e.textContent; }), { what: '번호 거절' });
+  const joined = await pg.evaluate(() => window.__vnPlay.joined);
+  const seat = await pg.evaluate(() => window.__vnPlay.net && window.__vnPlay.net.uid).then(u => u ? dump(srv, `vn/rooms/${host.code}/players/${u}`) : null);
+  ok(msg.includes(`1~${N}번`) && !joined && !seat, `${N + 1}번은 못 들어옴 — 「${msg}」`);
+  await ctx.close();
+}
+{
+  const st = await studs[0].page.evaluate(() => window.__vnSound.state());
+  ok(st.locked && st.ctx === 'none' && !(await studs[0].page.$('.snd [data-snd]')), `전체 모드 크롬북: 소리 잠금 · 소리 장치 없음 · 소리 단추 숨김(⚙ 움직임만) (${JSON.stringify(st)})`);
+}
 
 // 진행판 「다음 ▶」 자동으로 누르기(읽기 · 생각 시간 · 결과를 빨리 넘김 — 투표 시간은 그대로)
 let skipping = true, hold = false;

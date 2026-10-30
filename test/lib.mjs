@@ -39,9 +39,9 @@ export async function waitFor(fn, { timeout = 20000, every = 100, what = '조건
 }
 
 /** 진행판 열고 방 만들기 → { page, code } */
-export async function openHost(browser, srv, { mode = 'class', cls = 4, pace = 'fast', speed = 4, view = { width: 1366, height: 768 } } = {}) {
-  const ctx = await browser.newContext({ viewport: view });
-  await ctx.addInitScript(p => { try { if (!localStorage.getItem('vn.host.pref')) localStorage.setItem('vn.host.pref', JSON.stringify(p)); } catch {} }, { cls, mode, pace });
+export async function openHost(browser, srv, { mode = 'class', seats = 30, pace = 'fast', speed = 4, reduce = false, view = { width: 1366, height: 768 } } = {}) {
+  const ctx = await browser.newContext({ viewport: view, reducedMotion: reduce ? 'reduce' : 'no-preference' });
+  await ctx.addInitScript(p => { try { if (!localStorage.getItem('vn.host.pref')) localStorage.setItem('vn.host.pref', JSON.stringify(p)); } catch {} }, { seats, mode, pace });
   const page = await ctx.newPage();
   page.on('pageerror', e => console.log('[진행판 오류]', e.message));
   page.on('dialog', d => d.accept());
@@ -96,7 +96,12 @@ export async function launch(headless = true) {
  */
 export const UI_SEL = ['#bar', '.ts-col > *', '.ts-foot', '.ts-splash .logo', '.sp-press', '.vn-box', '.vn-chip', '.vn-hud', '.vn-fx',
   '.ov-vote', '.ov-title > *', '.picker', '.paused-tag', '.toast', '.vn-next', '.vn-name',
-  '.petal', '.spark'];   // 움직이는 꽃잎 · 반짝이도 얼굴을 지나가면 안 된다(찍는 순간마다 검사)
+  '.petal', '.spark',     // 움직이는 꽃잎 · 반짝이도 얼굴을 지나가면 안 된다(찍는 순간마다 검사)
+  // 효과(2026-10-30): 감정 표시 · ♪ · 지표 꼬리표 · 꽃가루 조각 · 반짝 터짐 · 안내 · 소리 조절 · 엔딩 머리
+  '.vn-emote', '.vn-note', '.fx-chip', '.fx-conf i', '.fx-burst i', '.adv-hint', '.snd', '.cg-head',
+  '.fc-band', '.fx-trail i', '#setp'];   // 장 제목 띠 · 기술 반짝 길 · ⚙ 설정 판
+// 날씨 캔버스(.vn-wx)는 상자 대신 「마지막으로 그린 알갱이 상자」(canvas.__vnDrawn)로 검사하고,
+// 캔버스 · 빛 터짐(.vn-bloom)은 인물 칸(.vn-cast)보다 뒤에 있어야 한다(쌓임 순서 검사)
 export function faceCheck(page) {
   return page.evaluate(sel => {
     const shown = el => {
@@ -107,7 +112,7 @@ export function faceCheck(page) {
       const r = el.getBoundingClientRect();
       return r.width > 2 && r.height > 2;
     };
-    const faces = [];
+    const faces = [], heads = [];
     for (const el of document.querySelectorAll('[data-faces]')) {
       if (!shown(el)) continue;
       const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
@@ -138,8 +143,27 @@ export function faceCheck(page) {
       if (el.naturalWidth) { const s = Math.min(r.width / el.naturalWidth, r.height / el.naturalHeight); w = el.naturalWidth * s; h = el.naturalHeight * s; }
       const x = r.left + (r.width - w) / 2, y = r.bottom - h;
       faces.push({ x0: x + w * .15, y0: y, x1: x + w * .85, y1: y + h * .36, who: el.getAttribute('alt') || 'sprite' });
+      // 머리(머리카락 · 묶은 머리까지, art.py 의 data-head) — 감정 표시 · ♪ 는 이 상자도 피해야 한다
+      if (el.dataset.head) {
+        const [a, b, c, d] = el.dataset.head.split(',').map(Number);
+        heads.push({ x0: x + a * w, y0: y + b * h, x1: x + c * w, y1: y + d * h, who: (el.getAttribute('alt') || 'sprite') + ' 머리' });
+      }
     }
     const hits = [];
+    for (const cv of document.querySelectorAll('canvas.vn-wx')) {
+      if (!shown(cv)) continue;
+      for (const r of (cv.__vnDrawn ? cv.__vnDrawn() : [])) for (const f of faces) {
+        const ix = Math.min(r.right, f.x1) - Math.max(r.left, f.x0), iy = Math.min(r.bottom, f.y1) - Math.max(r.top, f.y0);
+        if (ix > 3 && iy > 3) hits.push(`날씨 알갱이 ↔ ${f.who}`);
+      }
+    }
+    for (const el of document.querySelectorAll('.vn-wx, .vn-bloom')) {
+      const cast = el.parentElement && el.parentElement.querySelector(':scope > .vn-cast');
+      if (!cast) continue;
+      const zi = x => Number(getComputedStyle(x).zIndex) || 0;
+      const behind = zi(el) < zi(cast) || (zi(el) === zi(cast) && (el.compareDocumentPosition(cast) & Node.DOCUMENT_POSITION_FOLLOWING));
+      if (!behind) hits.push(`${el.className} 가 인물 앞에 있음`);
+    }
     for (const s of sel) {
       for (const el of document.querySelectorAll(s)) {
         if (!shown(el)) continue;
@@ -154,7 +178,7 @@ export function faceCheck(page) {
           if (acs.overflowY !== 'visible') { r.top = Math.max(r.top, ar.top); r.bottom = Math.min(r.bottom, ar.bottom); }
         }
         if (r.right - r.left <= 0 || r.bottom - r.top <= 0) continue;
-        for (const f of faces) {
+        for (const f of (s === '.vn-emote' || s === '.vn-note') ? faces.concat(heads) : faces) {
           const ix = Math.min(r.right, f.x1) - Math.max(r.left, f.x0), iy = Math.min(r.bottom, f.y1) - Math.max(r.top, f.y0);
           if (ix > 3 && iy > 3) hits.push(`${s} ↔ ${f.who} (${Math.round(ix)}×${Math.round(iy)}px)`);
         }
@@ -162,4 +186,33 @@ export function faceCheck(page) {
     }
     return { faces: faces.length, hits: [...new Set(hits)] };
   }, UI_SEL);
+}
+
+/**
+ * UI 끼리 겹침 검사 — 「⏸ 멈춤」 표시 · 장 제목 띠 · 지표 꼬리표 · 지표(HUD) 칸. 겹친 짝 목록(빈 배열이면 통과)
+ * 꼬리표끼리 · 꼬리표↔지표 · 꼬리표↔띠 · 멈춤↔띠 · 멈춤↔꼬리표
+ */
+export function uiOverlap(page) {
+  return page.evaluate(() => {
+    const shown = el => {
+      for (let e = el; e && e !== document.body; e = e.parentElement) {
+        const cs = getComputedStyle(e);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) < 0.05) return false;
+      }
+      const r = el.getBoundingClientRect();
+      return r.width > 2 && r.height > 2;
+    };
+    const get = (sel, nm) => [...document.querySelectorAll(sel)].filter(shown).map((el, i) => ({ nm: `${nm}${i + 1}「${el.textContent.trim().slice(0, 12)}」`, r: el.getBoundingClientRect() }));
+    const tag = get('.paused-tag', '멈춤'), band = get('.fx-card .fc-band', '장 제목'), chip = get('.fx-chip', '꼬리표'), hud = get('.vn-hud .hud-i', '지표');
+    const hits = [];
+    const hit = (A, B, same = false) => {
+      A.forEach((a, i) => B.forEach((b, j) => {
+        if (same && j <= i) return;
+        const ix = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), iy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (ix > 1 && iy > 1) hits.push(`${a.nm} ↔ ${b.nm} (${Math.round(ix)}×${Math.round(iy)}px)`);
+      }));
+    };
+    hit(chip, chip, true); hit(chip, hud); hit(chip, band); hit(tag, band); hit(tag, chip);
+    return { n: { tag: tag.length, band: band.length, chip: chip.length, hud: hud.length }, hits };
+  });
 }
