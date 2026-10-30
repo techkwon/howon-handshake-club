@@ -8,6 +8,13 @@
 - 교사 진행판: https://ict-handshake-club.netlify.app/host.html
 - 모드: **전체 모드**(반 전체가 투표로 이야기를 정함) · **개인 모드**(크롬북으로 각자 끝까지)
 
+## 사용 방법
+
+| 누가 | 문서 | 바로 시작 |
+|---|---|---|
+| **교사** | [교사용 사용법](docs/교사용_사용법.md) — 준비 · 방 만들기 · 두 모드 진행 · 비상 모드 · 설정 · 45분 수업 예시 · 개인정보 · 문제 해결 | ① 큰 화면에서 진행판 주소를 열고 **새 수업 시작** ② 학생 수 · 방식 · 글 속도를 고르고 **방 만들기** ③ 학생이 다 들어오면 **시작 ▶**, 끝나면 **수업 끝**(기록 모두 지움) |
+| **학생** | [학생용 사용법](docs/학생용_사용법.md) — 들어가기 · 투표 · 혼자 하기 · 엔딩 도감 · 생각 정리 · 이럴 땐 이렇게 | ① 크롬북에서 학생 주소를 연다 ② 큰 화면의 **방 코드 4자리 + 내 번호**를 쓰고 **들어가기**(이름은 안 써요) ③ 전체 모드는 큰 화면을 보고 투표, 개인 모드는 화면을 눌러 끝까지 |
+
 ## 구조
 
 - `site/` — 배포하는 폴더(`index.html` 학생 · `host.html` 진행판 · `styles.css` · `img/` 그림 webp · `fonts/` Noto Serif KR 일부)
@@ -45,7 +52,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 
 ## 개인정보
 
-학생 이름은 받지 않는다. 방 코드 4자리 + 번호(1~30)만 쓴다. 주인공 성별 · 이름은 학생 기기 안에만 있고 저장되지 않는다.
+학생 이름은 받지 않는다. 방 코드 4자리 + 번호(1~99)만 쓴다. 주인공 성별 · 이름은 학생 기기 안에만 있고 저장되지 않는다.
 수업이 끝나면 방과 기록(투표 · 진행 · 성찰)을 모두 지운다.
 
 ## Firebase
@@ -176,7 +183,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 | 시간 바꾸기 | `src/flow.js` 의 `T` |
 | 음악 · 효과음 고치기 | `src/sound.js` 맨 위 `TRACKS`(화음 · 선율 악보) · 아래 `SFX` |
 | 화면 효과 고치기 | `src/fx.js`(날씨 · 감정 표시 · 흔들림 · 글자 찍기 · 넘기기 판정) · `site/styles.css` 끝 |
-| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) (브라우저 시험은 **한 번에 하나씩**) |
+| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
 | 배포 | `npm run build` 뒤 `netlify deploy --prod --no-build --dir site --site <site id>` |
 
 설계 · 데이터 · 보안 규칙은 `SPEC.md`.

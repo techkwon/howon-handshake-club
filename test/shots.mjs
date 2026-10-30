@@ -4,7 +4,7 @@
 // 검사: 크롬북 1366×768 에서 학생 화면 세로 스크롤 없음 · 375px 에서 가로 넘침 없음 · 진행판 가로 넘침 없음
 import fs from 'node:fs';
 import path from 'node:path';
-import { launch, startServers, openHost, openStudent, waitFor, sleep, here, tap, faceCheck } from './lib.mjs';
+import { launch, startServers, openHost, openStudent, waitFor, sleep, here, tap, faceCheck, titleClear } from './lib.mjs';
 import { ENDING_PATHS } from './paths.mjs';
 
 const DIR = path.join(here, 'shots');
@@ -108,6 +108,13 @@ for (let i = 0; i < 4000; i++) {
 await waitFor(() => H.evaluate(() => window.__vnHost.view.kind === 'endcard'), { timeout: 60000, what: '엔딩 카드' });
 await shot(H, 'host_endcard_1366');
 await H.setViewportSize({ width: 1920, height: 1080 }); await shot(H, 'host_endcard_1920'); await H.setViewportSize({ width: 1366, height: 768 });
+// 엔딩 카드 제목 · 한 줄 말이 칸에 눌려 숨지 않는다(2026-10-30 1366×768 에서 제목이 표 칸 밑으로 숨던 일)
+for (const [w, h] of [[1366, 768], [1024, 768], [1280, 800], [1920, 1080], [800, 600]]) {
+  await H.setViewportSize({ width: w, height: h }); await sleep(250);
+  const t = [...await titleClear(H, '.endcard .ec-title'), ...await titleClear(H, '.endcard .ec-msg')];
+  ok(!t.length, `엔딩 카드 제목 다 보임 @${w}x${h}${t.length ? ' — ' + t.join(' / ') : ''}`);
+}
+await H.setViewportSize({ width: 1366, height: 768 });
 await shot(big.page, 'class_endcard_1366', { noVScroll: true });
 await H.evaluate(() => window.__vnHost.api.openRefl());
 await waitFor(() => big.page.evaluate(() => !!document.querySelector('#reflF')), { what: '성찰 칸' });
@@ -145,6 +152,7 @@ for (const [s, tag] of [[sb, '1366'], [sp, '375']]) {
     const interesting = (pos.k === 'scene' && pos.id === 'S2' && pos.i === 4) || (pos.k === 'choice' && pos.id === 'V3') || (tagk === 'after-fx' && pos.id === 'V3')
       || (pos.k === 'scene' && pos.id === 'S7A' && pos.i === 3) || (pos.k === 'ending' && pos.i === 4) || pos.k === 'card';
     if (interesting && !taken.has(pos.k + pos.id + tagk)) { taken.add(pos.k + pos.id + tagk); await shot(s.page, `solo_${tagk}_${pos.id}_${tag}`, { noVScroll: vs }); }
+    if (pos.k === 'card' && !taken.has('title' + tag)) { taken.add('title' + tag); const t = await titleClear(s.page, '.endcard .ec-title'); ok(!t.length, `개인 엔딩 카드 제목 다 보임 (${tag})${t.length ? ' — ' + t.join(' / ') : ''}`); }
     await s.page.evaluate(p => {
       const q = x => document.querySelector(x);
       const b = p.k === 'choice' ? q(`[data-c="${p.c}"]`) : p.k === 'card' ? q('#bDone') : q('#bNext');

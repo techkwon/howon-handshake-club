@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ict-handshake-club.netlify.app/sitemap.xml

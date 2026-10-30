@@ -387,8 +387,31 @@ export function twFinish() {
 export function hintOnce(key, msg) {
   try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch {}
   const h = doc.createElement('div');
-  h.className = 'adv-hint'; h.setAttribute('role', 'status'); h.textContent = msg;
+  h.className = 'adv-hint'; h.setAttribute('role', 'status');
+  // 「(스페이스 · →)」 같은 키 안내는 좁은 화면에서 숨긴다(styles.css .ah-k)
+  const cut = msg.indexOf(' (');
+  h.textContent = cut > 0 ? msg.slice(0, cut) : msg;
+  if (cut > 0) { const k = doc.createElement('span'); k.className = 'ah-k'; k.textContent = msg.slice(cut); h.appendChild(k); }
   doc.body.appendChild(h);
+  // 자리: 대사 상자 위 테두리(글자 없는 종이 틀)에 걸쳐 — 대사 글자 · 장면 제목 · 지표 · 인물 얼굴을 가리지 않게.
+  // 대사 상자가 없으면 머리띠 바로 아래 가운데(styles.css 기본값)
+  // 대사 상자는 줄이 늘면 위로 자라고 장면마다 새로 그려진다 → 안내가 떠 있는 동안 매 프레임 따라간다
+  const follow = () => {
+    if (!h.isConnected) return;
+    try {
+      const box = [...doc.querySelectorAll('.vn-box')].filter(b => b.offsetParent && b.getBoundingClientRect().height > 40).pop();
+      const br = box && box.getBoundingClientRect();
+      // 투표판 · 장 제목처럼 상자 위를 덮은 판이 있으면 상자에 붙이지 않는다(덮개 위 글자를 가리게 되므로)
+      const top = br && doc.elementFromPoint(br.left + br.width / 2, Math.min(window.innerHeight - 1, Math.max(0, br.top + 12)));
+      if (box && top && (box.contains(top) || top === box)) {
+        const r = br, narrow = window.innerWidth <= 760;
+        h.style.top = Math.max(8, Math.round(r.top - (narrow ? 4 : 14))) + 'px';
+        h.style.left = Math.round(r.left + r.width / 2) + 'px';
+      } else { h.style.top = ''; h.style.left = ''; }
+    } catch {}
+    requestAnimationFrame(follow);
+  };
+  follow();
   setTimeout(() => h.classList.add('out'), 3800);
   setTimeout(() => h.remove(), 4600);
 }

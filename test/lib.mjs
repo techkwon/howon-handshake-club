@@ -216,3 +216,34 @@ export function uiOverlap(page) {
     return { n: { tag: tag.length, band: band.length, chip: chip.length, hud: hud.length }, hits };
   });
 }
+
+/**
+ * 제목이 다 보이는지 — 제목 상자가 (스크롤 · 잘라 내는) 조상 칸 안에 다 들어 있고, 다른 칸이 위에 겹치지 않는다.
+ * 문제 목록을 돌려준다(빈 배열이면 통과). 2026-10-30 진행판 엔딩 카드 제목이 칸 밑으로 숨던 일
+ */
+export function titleClear(page, sel) {
+  return page.evaluate(sel => {
+    const el = document.querySelector(sel);
+    if (!el) return [`${sel} 없음`];
+    const r = el.getBoundingClientRect(), out = [];
+    if (r.width < 4 || r.height < 4) return [`${sel} 크기 0`];
+    for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      if (cs.overflowX === 'visible' && cs.overflowY === 'visible' && a !== document.body) continue;
+      const ar = a.getBoundingClientRect();
+      if (r.top < ar.top - 1 || r.bottom > ar.bottom + 1 || r.left < ar.left - 1 || r.right > ar.right + 1)
+        out.push(`${sel} 가 ${a.className || a.tagName} 밖으로 나감 (${Math.round(r.top)}~${Math.round(r.bottom)} / ${Math.round(ar.top)}~${Math.round(ar.bottom)})`);
+    }
+    if (r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) out.push(`${sel} 가 화면 밖`);
+    // 위에 겹친 칸: 제목 안 여러 점에서 맨 위 요소가 제목(또는 그 안)인지
+    let bad = 0, n = 0;
+    for (let i = 1; i <= 7; i++) for (let j = 1; j <= 3; j++) {
+      const x = r.left + r.width * i / 8, y = r.top + r.height * j / 4;
+      if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
+      n++;
+      const t = document.elementFromPoint(x, y);
+      if (t && t !== el && !el.contains(t) && !t.contains(el)) { bad++; if (bad === 1) out.push(`${sel} 위에 ${t.className || t.tagName} 가 겹침`); }
+    }
+    return out;
+  }, sel);
+}
