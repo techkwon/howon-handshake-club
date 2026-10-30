@@ -1,0 +1,23 @@
+{
+  "name": "handshake-club",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "손잡이 동아리 — 적정 기술 비주얼 노벨 (개인 모드 · 전체 모드)",
+  "scripts": {
+    "art": "python tools/art.py",
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "serve": "node test/serve.mjs",
+    "mock": "node test/mockdb.mjs",
+    "test:unit": "node test/unit.mjs",
+    "test:rules": "node test/rules.mjs",
+    "test:class": "node test/load_class.mjs",
+    "test:solo": "node test/load_solo.mjs",
+    "test:shots": "node test/shots.mjs"
+  },
+  "dependencies": {
+    "esbuild": "^0.25.0",
+    "firebase": "^11.0.0"
+  }
+}

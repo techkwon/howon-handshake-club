@@ -1,0 +1,499 @@
+{
+ "chars": {
+  "hangyeol": {
+   "sprite": {
+    "src": "img/ch/hangyeol.webp",
+    "w": 237,
+    "h": 600,
+    "kb": 38
+   },
+   "faces": [
+    "img/ch/hangyeol_0.webp",
+    "img/ch/hangyeol_1.webp",
+    "img/ch/hangyeol_2.webp"
+   ],
+   "from": "01_한결.png"
+  },
+  "daon": {
+   "sprite": {
+    "src": "img/ch/daon.webp",
+    "w": 237,
+    "h": 600,
+    "kb": 33
+   },
+   "faces": [
+    "img/ch/daon_0.webp",
+    "img/ch/daon_1.webp",
+    "img/ch/daon_2.webp"
+   ],
+   "from": "02_다온.png"
+  },
+  "soyun": {
+   "sprite": {
+    "src": "img/ch/soyun.webp",
+    "w": 260,
+    "h": 600,
+    "kb": 36
+   },
+   "faces": [
+    "img/ch/soyun_0.webp",
+    "img/ch/soyun_1.webp",
+    "img/ch/soyun_2.webp"
+   ],
+   "from": "03_한소윤.png"
+  },
+  "eungyeol": {
+   "sprite": {
+    "src": "img/ch/eungyeol.webp",
+    "w": 216,
+    "h": 600,
+    "kb": 33
+   },
+   "faces": [
+    "img/ch/eungyeol_0.webp",
+    "img/ch/eungyeol_1.webp",
+    "img/ch/eungyeol_2.webp"
+   ],
+   "from": "06_서은결.png"
+  },
+  "harin": {
+   "sprite": {
+    "src": "img/ch/harin.webp",
+    "w": 315,
+    "h": 600,
+    "kb": 46
+   },
+   "faces": [
+    "img/ch/harin_0.webp",
+    "img/ch/harin_1.webp",
+    "img/ch/harin_2.webp"
+   ],
+   "from": "04_도하린.png"
+  },
+  "hanbyeol": {
+   "sprite": {
+    "src": "img/ch/hanbyeol.webp",
+    "w": 281,
+    "h": 600,
+    "kb": 48
+   },
+   "faces": [
+    "img/ch/hanbyeol_0.webp",
+    "img/ch/hanbyeol_1.webp",
+    "img/ch/hanbyeol_2.webp"
+   ],
+   "from": "07_주한별.png"
+  },
+  "chaewon": {
+   "sprite": {
+    "src": "img/ch/chaewon.webp",
+    "w": 273,
+    "h": 600,
+    "kb": 41
+   },
+   "faces": [
+    "img/ch/chaewon_0.webp",
+    "img/ch/chaewon_1.webp",
+    "img/ch/chaewon_2.webp"
+   ],
+   "from": "05_유채원.png"
+  },
+  "haru": {
+   "sprite": {
+    "src": "img/ch/haru.webp",
+    "w": 252,
+    "h": 600,
+    "kb": 39
+   },
+   "faces": [
+    "img/ch/haru_0.webp",
+    "img/ch/haru_1.webp",
+    "img/ch/haru_2.webp"
+   ],
+   "from": "08_민하루.png"
+  },
+  "tenu": {
+   "sprite": {
+    "src": "img/ch/tenu.webp",
+    "w": 281,
+    "h": 600,
+    "kb": 37
+   },
+   "faces": [
+    "img/ch/tenu_0.webp",
+    "img/ch/tenu_1.webp",
+    "img/ch/tenu_2.webp"
+   ],
+   "from": "09_테누.png"
+  },
+  "bong": {
+   "sprite": {
+    "src": "img/ch/bong.webp",
+    "w": 227,
+    "h": 600,
+    "kb": 32
+   },
+   "faces": [
+    "img/ch/bong_0.webp",
+    "img/ch/bong_1.webp",
+    "img/ch/bong_2.webp"
+   ],
+   "from": "10_봉선생님.png"
+  },
+  "miko": {
+   "sprite": {
+    "src": "img/ch/miko.webp",
+    "w": 260,
+    "h": 600,
+    "kb": 46
+   },
+   "faces": [
+    "img/ch/miko_0.webp",
+    "img/ch/miko_1.webp",
+    "img/ch/miko_2.webp"
+   ],
+   "from": "11_미코.png"
+  },
+  "hala": {
+   "sprite": {
+    "src": "img/ch/hala.webp",
+    "w": 271,
+    "h": 600,
+    "kb": 46
+   },
+   "faces": [
+    "img/ch/hala_0.webp",
+    "img/ch/hala_1.webp",
+    "img/ch/hala_2.webp"
+   ],
+   "from": "12_할라할머니.png"
+  },
+  "bara": {
+   "sprite": {
+    "src": "img/ch/bara.webp",
+    "w": 258,
+    "h": 600,
+    "kb": 37
+   },
+   "faces": [
+    "img/ch/bara_0.webp",
+    "img/ch/bara_1.webp",
+    "img/ch/bara_2.webp"
+   ],
+   "from": "13_바라선생님.png"
+  },
+  "kamu": {
+   "sprite": {
+    "src": "img/ch/kamu.webp",
+    "w": 280,
+    "h": 600,
+    "kb": 34
+   },
+   "faces": [
+    "img/ch/kamu_0.webp",
+    "img/ch/kamu_1.webp",
+    "img/ch/kamu_2.webp"
+   ],
+   "from": "14_카무아저씨.png"
+  }
+ },
+ "bg": {
+  "field": "img/bg/field.webp",
+  "club": "img/bg/club.webp",
+  "call": "img/bg/call.webp",
+  "fest": "img/bg/fest.webp",
+  "well": "img/bg/well.webp",
+  "market": "img/bg/market.webp",
+  "forge": "img/bg/forge.webp",
+  "roof": "img/bg/roof.webp",
+  "night": "img/bg/night.webp",
+  "snow": "img/bg/snow.webp",
+  "hall": "img/bg/hall.webp",
+  "garden": "img/bg/garden.webp"
+ },
+ "end": {
+  "E10": "img/end/E10.webp",
+  "E1m": "img/end/E1m.webp",
+  "E1f": "img/end/E1f.webp",
+  "E2m": "img/end/E2m.webp",
+  "E2f": "img/end/E2f.webp",
+  "E3m": "img/end/E3m.webp",
+  "E3f": "img/end/E3f.webp",
+  "E4": "img/end/E4.webp",
+  "E5": "img/end/E5.webp",
+  "E6": "img/end/E6.webp",
+  "E7": "img/end/E7.webp",
+  "E8": "img/end/E8.webp",
+  "E9": "img/end/E9.webp"
+ },
+ "card": {
+  "roll": "img/card/roll.webp",
+  "straw": "img/card/straw.webp",
+  "rain": "img/card/rain.webp",
+  "bottle": "img/card/bottle.webp",
+  "bike": "img/card/bike.webp",
+  "solar": "img/card/solar.webp",
+  "pot": "img/card/pot.webp"
+ },
+ "ui": {
+  "dialog": {
+   "src": "img/ui/dialog.webp",
+   "w": 1000,
+   "h": 221,
+   "slice": [
+    98,
+    110,
+    98,
+    110
+   ]
+  },
+  "nameplate": {
+   "src": "img/ui/nameplate.webp",
+   "w": 420,
+   "h": 74,
+   "slice": [
+    14,
+    44,
+    14,
+    84
+   ]
+  },
+  "btn": {
+   "src": "img/ui/btn.webp",
+   "w": 900,
+   "h": 141,
+   "slice": [
+    24,
+    72,
+    24,
+    72
+   ]
+  },
+  "btn_on": {
+   "src": "img/ui/btn_on.webp",
+   "w": 900,
+   "h": 143,
+   "slice": [
+    24,
+    72,
+    24,
+    120
+   ]
+  },
+  "btn_main": {
+   "src": "img/ui/btn_main.webp",
+   "w": 900,
+   "h": 138,
+   "slice": [
+    24,
+    72,
+    24,
+    72
+   ]
+  },
+  "bow": {
+   "src": "img/ui/bow.webp",
+   "w": 378,
+   "h": 80
+  },
+  "frame_cert": {
+   "src": "img/ui/frame_cert.webp",
+   "w": 900,
+   "h": 636,
+   "slice": [
+    180,
+    200,
+    175,
+    200
+   ]
+  },
+  "frame_card": {
+   "src": "img/ui/frame_card.webp",
+   "w": 420,
+   "h": 581,
+   "slice": [
+    70,
+    70,
+    70,
+    70
+   ]
+  },
+  "corner": {
+   "src": "img/ui/corner.webp",
+   "w": 420,
+   "h": 369
+  },
+  "divider": {
+   "src": "img/ui/divider.webp",
+   "w": 520,
+   "h": 67
+  },
+  "cursor": {
+   "src": "img/ui/cursor.webp",
+   "w": 96,
+   "h": 89
+  },
+  "next": {
+   "src": "img/ui/next.webp",
+   "w": 72,
+   "h": 47
+  },
+  "emblem": {
+   "src": "img/ui/emblem.webp",
+   "w": 256,
+   "h": 242
+  },
+  "icon_h": {
+   "src": "img/ui/icon_h.webp",
+   "w": 128,
+   "h": 127
+  },
+  "icon_o": {
+   "src": "img/ui/icon_o.webp",
+   "w": 128,
+   "h": 127
+  },
+  "icon_u": {
+   "src": "img/ui/icon_u.webp",
+   "w": 128,
+   "h": 127
+  },
+  "petal1": {
+   "src": "img/ui/petal1.webp",
+   "w": 64,
+   "h": 43
+  },
+  "petal2": {
+   "src": "img/ui/petal2.webp",
+   "w": 64,
+   "h": 67
+  },
+  "petal3": {
+   "src": "img/ui/petal3.webp",
+   "w": 64,
+   "h": 88
+  },
+  "petal4": {
+   "src": "img/ui/petal4.webp",
+   "w": 64,
+   "h": 105
+  },
+  "petal5": {
+   "src": "img/ui/petal5.webp",
+   "w": 64,
+   "h": 41
+  },
+  "petal6": {
+   "src": "img/ui/petal6.webp",
+   "w": 64,
+   "h": 35
+  },
+  "spark1": {
+   "src": "img/ui/spark1.webp",
+   "w": 64,
+   "h": 65
+  },
+  "spark2": {
+   "src": "img/ui/spark2.webp",
+   "w": 64,
+   "h": 82
+  },
+  "spark3": {
+   "src": "img/ui/spark3.webp",
+   "w": 64,
+   "h": 72
+  },
+  "paper": {
+   "src": "img/ui/paper.webp",
+   "w": 512,
+   "h": 512
+  },
+  "kv": {
+   "src": "img/ui/kv.webp",
+   "w": 1920,
+   "h": 1080,
+   "faces": [
+    [
+     0.468,
+     0.06,
+     0.605,
+     0.285
+    ],
+    [
+     0.62,
+     0.07,
+     0.765,
+     0.29
+    ],
+    [
+     0.77,
+     0.09,
+     0.9,
+     0.33
+    ],
+    [
+     0.455,
+     0.345,
+     0.605,
+     0.57
+    ],
+    [
+     0.6,
+     0.345,
+     0.765,
+     0.585
+    ],
+    [
+     0.82,
+     0.34,
+     0.96,
+     0.56
+    ]
+   ]
+  },
+  "kv_s": {
+   "src": "img/ui/kv_s.webp",
+   "w": 960,
+   "h": 540,
+   "faces": [
+    [
+     0.468,
+     0.06,
+     0.605,
+     0.285
+    ],
+    [
+     0.62,
+     0.07,
+     0.765,
+     0.29
+    ],
+    [
+     0.77,
+     0.09,
+     0.9,
+     0.33
+    ],
+    [
+     0.455,
+     0.345,
+     0.605,
+     0.57
+    ],
+    [
+     0.6,
+     0.345,
+     0.765,
+     0.585
+    ],
+    [
+     0.82,
+     0.34,
+     0.96,
+     0.56
+    ]
+   ]
+  }
+ },
+ "source": "그림"
+}
