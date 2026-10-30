@@ -6,6 +6,7 @@ import { connectNet } from './net.js';
 import * as S from './story.js';
 import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
 import { initSound, setLocked, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
+import { speak, stopVoice, preloadVoice } from './voice.js';
 import { moodOf, lineFx, emote, shake, techBurst, floatChips, confetti, emphasize, endingReveal, chapterOf, chapterCard, cardSkip, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
 import { ROOT, MAX_NUM, seatsOf, esc, parseJSON, devTag, CIRCLED, LS, REFL_Q, MAX_REFL, randInt } from './shared.js';
 
@@ -21,7 +22,7 @@ const P = {
 };
 window.__vnPlay = P; // 시험 · 점검용
 // 소리: 전체 모드 크롬북은 언제나 끔(잠금 · 단추도 숨김 — 소리는 큰 화면에서). 개인 모드는 처음엔 끔, 머리띠 단추로 켠다
-initSound({ page: 'solo', defaults: { bgm: false, sfx: false, bgmVol: 0.4, sfxVol: 0.5, track: 'm1', motion: 'lo' }, locked: true });   // 학생 기기: 소리 끔 · 움직임 「하」(교사 확정 10.30)
+initSound({ page: 'solo', defaults: { bgm: false, sfx: false, bgmVol: 0.4, sfxVol: 0.5, track: 'm1', motion: 'lo', voice: false, voiceVol: 0.9, narr: true }, locked: true });   // 학생 기기: 소리 끔 · 움직임 「하」(교사 확정 10.30)
 
 function connect() {
   if (!P.netP) {
@@ -395,6 +396,9 @@ function renderSoloScene() {
   if (P.screen === key) return;
   const cont = soloBox();
   P.screen = key;
+  // 🗣 목소리(개인 모드 · 학생이 ⚙ 에서 켰을 때만 — 기본 끔): 지금 줄을 읽고 다음 줄을 미리 받는다
+  speak(last);
+  if (lines[shown]) preloadVoice(lines[shown]);
   const cast = isEnd && cg ? [] : (n.cast || []);
   const rebuilt = renderStage(cont, {
     bg, tint: n.tint, cg, cast, speaker: last && last.role, run, when: n.when, romance: !!n.rel,
@@ -474,6 +478,7 @@ function soloNext() {
   const lines = curLines();
   if ((pos.i || 1) < lines.length) { pos.i = (pos.i || 1) + 1; delete pos.fx; saveSolo(); return render(); }
   // 장면 끝
+  stopVoice();
   if (!s.seen.includes(pos.k + ':' + pos.id)) s.seen.push(pos.k + ':' + pos.id);
   if (pos.k === 'ending') { s.pos = { k: 'card', id: pos.id }; saveSolo(); P.screen = ''; return render(); }
   let id = pos.k === 'scene' ? S.NODES[pos.id].next : S.NODES[pos.id].next;
@@ -493,6 +498,7 @@ function renderSoloChoice() {
   const key = `s-choice-${pos.id}`;
   if (P.screen === key) return;
   P.screen = key;
+  stopVoice();
   renderStage(soloBox(), { bg: n.bg, tint: n.tint, cast: n.cast || [], run, chip: chipOf(n), hud: S.statsOf(run),
     boxHTML: `<div class="vn-box choice">
       <h2 class="vote-q">${esc(n.q)}</h2>

@@ -150,6 +150,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 - 효과음: 글 넘김 「톡」 · 장면 바뀜 · 투표 열림 · 마지막 3초 · 결과 공개 · 동률 · 주사위 · 지표 오름 · 기술이 켜짐 · 엔딩 종소리
 - 효과음은 효과마다 짝이 있다(말하는 사람 바뀜 · 장 제목 · 느낌표 · 속마음 · 기술 반짝/성공 · 선택지 등장 · 마우스 올림(자주 안 울림) · 고름 · 마지막 3초 두근 · 막대 북 굴림 · 이긴 길 도장 · 설렘 · 엔딩). 날씨마다 작은 환경음(비 · 밤 · 바람 · 방)도 효과음을 따라 켜지고 꺼진다
 - 설정(켜기 · 곡 · 크기 · 움직임)은 그 컴퓨터에 기억된다. 탭을 다른 데로 옮기면 소리가 멈춘다
+- **🗣 목소리(풀 보이스)**: 인물 대사와 해설을 녹음으로 읽어 준다(Gemini 음성으로 미리 만든 `site/voice/*.ogg` 317개 · 약 23분 · 5.5MB). 진행판은 처음부터 켬 · 개인 모드 크롬북은 처음엔 끔(이어폰을 끼고 🗣 로 켬) · 전체 모드 크롬북은 늘 소리 없음. ⚙ 설정에서 목소리 켜기 · 크기 · 「해설 읽기」 따로 끄기. 말하는 동안 배경음악은 30% 작아진다. 전체 모드는 줄마다 녹음이 끝날 때까지(+0.45초) 기다렸다 넘어간다 — 한 판 시간은 거의 같다. 글을 고치면 그 줄은 녹음이 없어져 소리 없이 글만 나온다(다시 녹음해야 함)
 
 ## 화면 효과
 
@@ -182,6 +183,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 | 제목 글꼴 | 이야기에 새 글자가 생기면 `python tools/font.py` (없는 글자는 시스템 글꼴로 보인다) |
 | 시간 바꾸기 | `src/flow.js` 의 `T` |
 | 음악 · 효과음 고치기 | `src/sound.js` 맨 위 `TRACKS`(화음 · 선율 악보) · 아래 `SFX` |
+| 목소리 다시 녹음 | 글이 바뀐 줄 · 빠진 줄만 다시 만들어 `site/voice/` 와 `src/voice-manifest.json` 에 넣는다(녹음 열쇠 = 그림 id + 화면 글 해시, `src/voice-key.js`) → `node test/voice.mjs` · `node test/voice_play.mjs` |
 | 화면 효과 고치기 | `src/fx.js`(날씨 · 감정 표시 · 흔들림 · 글자 찍기 · 넘기기 판정) · `site/styles.css` 끝 |
 | 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
 | 배포 | `npm run build` 뒤 `netlify deploy --prod --no-build --dir site --site <site id>` |

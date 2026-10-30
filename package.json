@@ -14,7 +14,8 @@
     "test:rules": "node test/rules.mjs",
     "test:class": "node test/load_class.mjs",
     "test:solo": "node test/load_solo.mjs",
-    "test:shots": "node test/shots.mjs"
+    "test:shots": "node test/shots.mjs",
+    "test:voice": "node test/voice.mjs"
   },
   "dependencies": {
     "esbuild": "^0.25.0",

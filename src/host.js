@@ -6,6 +6,7 @@ import { T, PACES, lineMs } from './flow.js';
 import { countVotes, resolveVote } from './vote.js';
 import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
 import { initSound, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
+import { speak, stopVoice, preloadVoice, VOICE_PAD } from './voice.js';
 import { moodOf, lineFx, emote, shake, bloom, techBurst, floatChips, confetti, winBurst, tallyDrama, countdown, emphasize, endingReveal, chapterOf, chapterCard, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
 import { ROOT, MAX_NUM, DEFAULT_SEATS, seatsOf, seatLabel, DAY_MS, esc, parseJSON, newRoomCode, devTag, CIRCLED, LS, REFL_Q, randInt, gradeOf, GRADE_LABEL, speedFactor } from './shared.js';
 
@@ -30,7 +31,7 @@ const H = {
 };
 window.__vnHost = H; // 시험 · 점검용
 // 소리: 진행판(프로젝터)은 BGM 켬(작게) · 효과음 켬. 처음 누를 때(시작 그림 · 새 수업 시작) 소리 장치를 연다
-initSound({ page: 'host', defaults: { bgm: true, sfx: true, bgmVol: 0.35, sfxVol: 0.5, track: 'm1', motion: 'hi' } });   // 진행판: 소리 켬 · 움직임 「상」
+initSound({ page: 'host', defaults: { bgm: true, sfx: true, bgmVol: 0.35, sfxVol: 0.5, track: 'm1', motion: 'hi', voice: true, voiceVol: 0.9, narr: true } });   // 진행판: 소리 켬 · 움직임 「상」
 
 const now = () => (H.net && !H.offline ? H.net.serverNow() : Date.now());
 const roomP = p => `${ROOT}/${H.code}/${p}`;
@@ -363,6 +364,7 @@ function startStory() {
 
 async function direct(from) {
   const my = ++H.gen;
+  stopVoice();
   if (H.waiter) { const w = H.waiter; H.waiter = null; w.cancel && w.cancel(); }
   let id = from.id, k = from.k, start = from.i || 0;
   try {
@@ -408,7 +410,10 @@ async function playLines(id, k, lines, start, my) {
     H.pos = { id, k, i: i + 1 };
     H.view = { kind: 'lines', id, k, lines, shown: i + 1 };
     render(); saveSnap();
-    await wait(lineMs(lines[i].text, pace), my);
+    // 🗣 목소리: 녹음이 있으면 끝날 때까지(+ 조금) 기다린다 — 읽는 시간이 더 길면 그대로. 녹음이 없거나 끔이면 0
+    const vms = speak(lines[i]);
+    if (lines[i + 1]) preloadVoice(lines[i + 1]);
+    await wait(Math.max(lineMs(lines[i].text, pace), vms ? vms + VOICE_PAD : 0), my);
   }
   if (lines.length) await wait(T.hold, my);
   // 다음 장면 그림 미리
@@ -430,6 +435,7 @@ async function playChoice(id, my) {
   H.hist[id] = { opened: true };
   H.teacherPick = null;
   H.pos = { id, k: 'choice', i: 0 };
+  stopVoice();
   // 제목 + 생각 시간
   H.view = { kind: 'think', id, labels, cands, title: true };
   pub({ ph: 'think', chip: chipOf(n), vote: { id, q: n.q, labels, cands } });
@@ -578,6 +584,7 @@ function endCard(id) {
   const n = S.NODES[id];
   const st = S.statsOf(H.run), l = S.lightsOf(st);
   H.pos = { id, k: 'endcard', i: 0 };
+  stopVoice();
   H.view = { kind: 'endcard', id };
   pub({ ph: 'endcard', chip: '졸업식', end: { id, name: n.name, lights: l } });
   const board = LS.get(LS_BOARD, []);

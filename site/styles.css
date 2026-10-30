@@ -955,3 +955,8 @@ html[data-motion="off"] .vn-scene.shake,html[data-motion="off"] .vn-scene.pushin
 @media (min-width:761px){ @container (max-height:310px){ .vn-chip,.vn-hudw,.fx-chips,.vn-fx{display:none!important} } }
 /* 휴대 전화(지표 · 꼬리표는 이미 아래쪽): 위에 있는 이름표만 숨기고, 선택 결과 배지는 아래쪽(몸 자리)으로 */
 @media (max-width:760px){ @container (max-height:310px){ .vn-chip{display:none!important} .vn-fx{top:auto;bottom:44px} } }
+
+/* 🗣 목소리 설정 줄 — 「해설 읽기」 켬/끔을 같은 줄에 */
+.sp-sub { display: inline-flex; gap: .4em; align-items: center; }
+@media (max-width: 600px) { .setp .sp-g > .dim.small:not(.sp-md) { display: none; } }   /* 좁은 화면: 설정 판 설명 줄을 숨겨 무대를 덜 밀어 낸다(목소리 묶음이 한 줄 늘어서) */
+@media (max-width: 600px) { .setp .sp-vol { font-size: 0; gap: 0; } .setp .sp-vol input { width: 72px; } .setp .sp-in { gap: 6px 14px; } }   /* 좁은 화면: 크기 글자 빼고(aria-label 은 남음) 슬라이더를 줄여 한 묶음 = 한 줄 */

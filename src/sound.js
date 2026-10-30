@@ -115,7 +115,7 @@ const MOODS = {   // 장면 분위기: 밝기(Hz) · 크기
 };
 const S = {
   page: 'host', key: 'vn.snd.host', locked: true,
-  pref: { bgm: true, sfx: true, bgmVol: 0.35, sfxVol: 0.5, track: 'm1', motion: 'hi' },
+  pref: { bgm: true, sfx: true, bgmVol: 0.35, sfxVol: 0.5, track: 'm1', motion: 'hi', voice: true, voiceVol: 0.9, narr: true },
   amb: null, ambNode: null, log: [],
   ctx: null, master: null, bgmBus: null, sfxBus: null, verbM: null, verbS: null, mSend: null, noise: null,
   want: null,        // 지금 틀어야 하는 곡 id(open · m1~3 · end) — 소리가 꺼져 있어도 기억한다
@@ -134,7 +134,7 @@ export function initSound({ page, defaults = {}, locked = false } = {}) {
   S.pref = { ...S.pref, ...defaults, ...(osReduce ? { motion: 'off' } : {}), ...saved };
   if (!MAIN_IDS.includes(S.pref.track)) S.pref.track = 'm1';
   if (!MOTIONS.some(([k]) => k === S.pref.motion)) S.pref.motion = 'hi';
-  S.pref.bgmVol = clamp01(S.pref.bgmVol); S.pref.sfxVol = clamp01(S.pref.sfxVol);
+  S.pref.bgmVol = clamp01(S.pref.bgmVol); S.pref.sfxVol = clamp01(S.pref.sfxVol); S.pref.voiceVol = clamp01(S.pref.voiceVol ?? 0.9);
   applyMotion();
   const unlock = () => { if (!S.locked && (S.pref.bgm || S.pref.sfx)) ensure(); };
   for (const ev of ['pointerdown', 'keydown', 'click']) document.addEventListener(ev, unlock, { capture: true });
@@ -150,6 +150,7 @@ export function initSound({ page, defaults = {}, locked = false } = {}) {
 export function soundState() {
   return {
     page: S.page, locked: S.locked, bgm: S.pref.bgm, sfx: S.pref.sfx, bgmVol: S.pref.bgmVol, sfxVol: S.pref.sfxVol, track: S.pref.track, motion: S.pref.motion,
+    voice: !!S.pref.voice, voiceVol: S.pref.voiceVol, narr: S.pref.narr !== false, ducked: !!S.ducked,
     want: S.want, playing: S.cur ? S.cur.id : null, mood: S.mood, ctx: S.ctx ? S.ctx.state : 'none', amb: S.amb, ambOn: !!S.ambNode,
   };
 }
@@ -173,6 +174,7 @@ export function setSound(patch) {
   Object.assign(S.pref, patch);
   if (patch.bgmVol != null) S.pref.bgmVol = clamp01(patch.bgmVol);
   if (patch.sfxVol != null) S.pref.sfxVol = clamp01(patch.sfxVol);
+  if (patch.voiceVol != null) S.pref.voiceVol = clamp01(patch.voiceVol);
   if (patch.track && !MAIN_IDS.includes(S.pref.track)) S.pref.track = 'm1';
   if (patch.motion) { if (!MOTIONS.some(([k]) => k === S.pref.motion)) S.pref.motion = 'hi'; applyMotion(); }
   LS.set(S.key, S.pref);
@@ -251,14 +253,24 @@ function impulse(c, sec) {
   return b;
 }
 const BGM_BUS = 0.55, SFX_BUS = 1.6;
+const DUCK = 0.7;   // 🗣 목소리가 나오는 동안 BGM 크기 배수(30% 낮춤)
 /** 크기 슬라이더(0~1) → 전체 크기. 귀에 맞게 1.5제곱(작은 쪽을 세밀하게) */
 const masterGain = v => Math.pow(Math.min(1, Math.max(0, v)), 1.5) * 2.2;
 function applyLevels(now = false) {
   const c = S.ctx, t = c.currentTime, k = now ? 0.01 : 0.3;
   const on = !S.locked;
   S.master.gain.setTargetAtTime(on ? 1 : 0, t, k);
-  S.bgmBus.gain.setTargetAtTime(on && S.pref.bgm ? BGM_BUS * masterGain(S.pref.bgmVol) : 0, t, k);
+  S.bgmBus.gain.setTargetAtTime(on && S.pref.bgm ? BGM_BUS * masterGain(S.pref.bgmVol) * (S.ducked ? DUCK : 1) : 0, t, k);
   S.sfxBus.gain.setTargetAtTime(on && S.pref.sfx ? SFX_BUS * masterGain(S.pref.sfxVol) : 0, t, k);
+}
+
+/** 🗣 목소리 덕킹: 말하는 동안 BGM 을 조금 낮춘다(voice.js 가 부른다). 소리 장치가 없거나 잠금이면 상태만 기억 */
+export function duck(on) {
+  if (S.ducked === !!on) return;
+  S.ducked = !!on;
+  if (!S.ctx || S.locked || S.measuring) return;
+  const t = S.ctx.currentTime;
+  S.bgmBus.gain.setTargetAtTime(S.pref.bgm ? BGM_BUS * masterGain(S.pref.bgmVol) * (S.ducked ? DUCK : 1) : 0, t, on ? 0.08 : 0.35);
 }
 
 // ── 배경 음악 ────────────────────────────────────────────────────
@@ -595,11 +607,12 @@ const MOTION_DESC = { hi: '모든 움직임(날씨 · 숨쉬기 · 카메라 · 
 /** 머리띠 빠른 단추. 잠금(전체 모드 크롬북)이면 ⚙ 만(움직임 설정) */
 export function soundCtlHTML(cls = '') {
   const p = S.pref, open = !!document.getElementById('setp');
-  const gear = `<button type="button" class="snd-b gear ${open ? 'on' : ''}" data-set="1" aria-expanded="${open}" aria-controls="setp" title="설정 — 배경음악 · 효과음 · 움직임">⚙<span class="snd-l">설정</span></button>`;
+  const gear = `<button type="button" class="snd-b gear ${open ? 'on' : ''}" data-set="1" aria-expanded="${open}" aria-controls="setp" title="설정 — 배경음악 · 효과음 · 목소리 · 움직임">⚙<span class="snd-l">설정</span></button>`;
   if (S.locked) return `<span class="snd ${cls}" role="group" aria-label="설정">${gear}</span>`;
   return `<span class="snd ${cls}" role="group" aria-label="소리 · 설정">
     <button type="button" class="snd-b ${p.bgm ? 'on' : ''}" data-snd="bgm" aria-pressed="${p.bgm}" title="배경음악 켜기 · 끄기">🎵<span class="snd-l">음악</span></button>
     <button type="button" class="snd-b ${p.sfx ? 'on' : ''}" data-snd="sfx" aria-pressed="${p.sfx}" title="효과음 켜기 · 끄기(날씨 소리도 함께)">${p.sfx ? '🔊' : '🔈'}<span class="snd-l">효과음</span></button>
+    <button type="button" class="snd-b ${p.voice ? 'on' : ''}" data-snd="voice" aria-pressed="${!!p.voice}" title="목소리(대사 읽기) 켜기 · 끄기">🗣<span class="snd-l">목소리</span></button>
     ${gear}</span>`;
 }
 function settingsHTML() {
@@ -611,7 +624,10 @@ function settingsHTML() {
     <div class="sp-g" role="group" aria-label="배경음악"><b>🎵 배경음악</b>${sw('bgm', p.bgm)}
       <span class="sp-tr">${MAIN_IDS.map((id, i) => `<button type="button" class="sp-trb ${p.track === id ? 'on' : ''}" data-trk="${id}" aria-pressed="${p.track === id}">${i + 1} ${TRACKS[id].name}</button>`).join('')}</span>
       ${vol('bgmVol', '크기')}</div>
-    <div class="sp-g" role="group" aria-label="효과음"><b>🔊 효과음</b>${sw('sfx', p.sfx)}${vol('sfxVol', '크기')}<span class="dim small">날씨 소리(환경음)도 함께 켜고 꺼요</span></div>`}
+    <div class="sp-g" role="group" aria-label="효과음"><b>🔊 효과음</b>${sw('sfx', p.sfx)}${vol('sfxVol', '크기')}<span class="dim small">날씨 소리(환경음)도 함께 켜고 꺼요</span></div>
+    <div class="sp-g" role="group" aria-label="목소리"><b>🗣 목소리</b>${sw('voice', !!p.voice)}${vol('voiceVol', '크기')}
+      <span class="sp-sub">해설 읽기 ${sw('narr', p.narr !== false)}</span>
+      <span class="dim small">${S.page === 'solo' ? '이어폰을 끼고 켜 주세요' : '인물 대사와 해설을 읽어 줘요'}</span></div>`}
     <div class="sp-g" role="group" aria-label="움직임"><b>✨ 움직임</b>
       <span class="sp-mo">${MOTIONS.map(([k, l]) => `<button type="button" class="sp-mob ${p.motion === k ? 'on' : ''}" data-motion="${k}" aria-pressed="${p.motion === k}">${l}</button>`).join('')}</span>
       <span class="dim small sp-md">${MOTION_DESC[p.motion]}</span></div>
