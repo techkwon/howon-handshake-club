@@ -74,6 +74,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 |---|---|
 | 학생 크롬북 | **https://ict-handshake-club.netlify.app** |
 | 교사 진행판(큰 화면) | **https://ict-handshake-club.netlify.app/host.html** |
+| 혼자 하기(방 코드 · 진행판 없이) | **https://ict-handshake-club.netlify.app/alone.html** |
 
 > 학생 이름은 받지 않는다. **방 코드 4자리 + 번호(1~99)** 만. 주인공 성별 · 이름은 학생 크롬북 안에만 있고 어디에도 저장되지 않는다.
 > 「수업 끝」을 누르면 방과 학생 기록(투표 · 진행 · 성찰)이 모두 지워진다.
@@ -127,6 +128,14 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 6. **성찰 모아 보기 ▶** → **수업 끝**
 
 크롬북을 새로 고쳐도 그 자리에서 이어 간다(기기 안에 저장). 다른 크롬북으로 바꾸면 처음부터.
+
+## 혼자 하기 — 방 코드 없이 혼자 끝까지 (약 25분)
+
+`alone.html` 을 열면 바로 시작 화면이다. 방 · 진행판 · 서버가 없고 갈림길은 혼자 고른다. **소리 · 목소리는 켜진 채로 · 움직임 상**으로 시작한다(첫 누름부터 소리가 난다).
+
+- **남는 것은 엔딩 기록뿐**: 어떤 엔딩을 봤는지만 그 브라우저에 저장되고(`vn.alone.dex`), 시작 화면 「엔딩 도감 n / 10」으로 본다. 소리 설정은 따로 기억한다
+- **중간 저장은 없다**: 창을 닫거나 새로 고치면 이야기는 처음부터. 성찰 · 반 통계도 없다
+- 위쪽 「처음 화면」으로 나갈 수 있다. 다른 컴퓨터 · 다른 브라우저로는 기록이 옮겨 가지 않는다
 
 ## 소리 · 움직임 설정 (음악 · 효과음은 코드로 만듦 — 내려받은 파일 없음)
 
@@ -185,7 +194,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 | 음악 · 효과음 고치기 | `src/sound.js` 맨 위 `TRACKS`(화음 · 선율 악보) · 아래 `SFX` |
 | 목소리 다시 녹음 | 글이 바뀐 줄 · 빠진 줄만 다시 만들어 `site/voice/` 와 `src/voice-manifest.json` 에 넣는다(녹음 열쇠 = 그림 id + 화면 글 해시, `src/voice-key.js`) → `node test/voice.mjs` · `node test/voice_play.mjs` |
 | 화면 효과 고치기 | `src/fx.js`(날씨 · 감정 표시 · 흔들림 · 글자 찍기 · 넘기기 판정) · `site/styles.css` 끝 |
-| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
+| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/alone.mjs`(혼자 하기) · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
 | 배포 | `npm run build` 뒤 `netlify deploy --prod --no-build --dir site --site <site id>` |
 
 설계 · 데이터 · 보안 규칙은 `SPEC.md`.

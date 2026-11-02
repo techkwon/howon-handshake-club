@@ -510,6 +510,7 @@ body.play #main:has(.solo){padding:8px}
 .rq textarea:focus{border-color:var(--rose);outline:none;box-shadow:0 0 0 4px var(--rose-w)}
 .done-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1200px;margin:0 auto}
 .done-col{display:flex;flex-direction:column;gap:10px}
+.done-wrap.alone{grid-template-columns:minmax(0,760px);justify-content:center;padding:clamp(14px,3vh,32px) 16px}
 .dex-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .dex-c{border:2px dashed var(--rule);border-radius:10px;padding:6px;min-height:76px;font-size:13px;display:flex;flex-direction:column;gap:2px;color:var(--dim);background:rgba(255,253,248,.7)}
 .dex-c b{font-family:var(--f-display);font-size:18px;font-weight:700}

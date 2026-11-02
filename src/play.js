@@ -2,6 +2,7 @@
 //   전체 모드: 큰 화면을 보고, 투표 단추만 누른다(판정은 진행판).
 //   개인 모드: 이야기 전체를 이 기기에서 혼자 진행한다. DB 에는 숫자(진행 단계 · 고른 번호 · 엔딩 · 불빛)만 보낸다.
 //              주인공 성별 · 이름은 이 기기 안에만 둔다.
+//   혼자 하기(alone.html): 방 · 진행판 · 서버 없이 이 브라우저 혼자서. 저장하는 것은 엔딩 기록(도감)뿐이고 중간 진행은 저장하지 않는다.
 import { connectNet } from './net.js';
 import * as S from './story.js';
 import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
@@ -13,8 +14,10 @@ import { ROOT, MAX_NUM, seatsOf, esc, parseJSON, devTag, CIRCLED, LS, REFL_Q, MA
 const $ = s => document.querySelector(s);
 const main = $('#main');
 const LS_JOIN = 'vn.play';
+const LS_DEX = 'vn.alone.dex';   // 혼자 하기: 어떤 엔딩을 봤는지만 남긴다
 
 const P = {
+  alone: document.body.dataset.alone === '1',
   net: null, netP: null, connected: false,
   code: null, num: null, joinedAt: null, joined: false, kicked: null, ended: false,
   meta: null, core: {}, inputKey: null, mine: null, myVotes: {}, offs: [], mineOff: null,
@@ -22,7 +25,8 @@ const P = {
 };
 window.__vnPlay = P; // 시험 · 점검용
 // 소리: 전체 모드 크롬북은 언제나 끔(잠금 · 단추도 숨김 — 소리는 큰 화면에서). 개인 모드는 처음엔 끔, 머리띠 단추로 켠다
-initSound({ page: 'solo', defaults: { bgm: false, sfx: false, bgmVol: 0.4, sfxVol: 0.5, track: 'm1', motion: 'lo', voice: false, voiceVol: 0.9, narr: true }, locked: true });   // 학생 기기: 소리 끔 · 움직임 「하」(교사 확정 10.30)
+if (P.alone) initSound({ page: 'alone', defaults: { bgm: true, sfx: true, bgmVol: 0.4, sfxVol: 0.5, track: 'm1', motion: 'hi', voice: true, voiceVol: 0.9, narr: true } });   // 혼자 하기: 진행판처럼 소리 켬 · 움직임 「상」
+else initSound({ page: 'solo', defaults: { bgm: false, sfx: false, bgmVol: 0.4, sfxVol: 0.5, track: 'm1', motion: 'lo', voice: false, voiceVol: 0.9, narr: true }, locked: true });   // 학생 기기: 소리 끔 · 움직임 「하」(교사 확정 10.30)
 
 function connect() {
   if (!P.netP) {
@@ -124,6 +128,16 @@ function vote(c) {
 
 // ── 머리띠 ───────────────────────────────────────────────────────
 function renderBar() {
+  if (P.alone) {
+    $('#bar').innerHTML = `
+    <span class="b-title">${emblemHTML()}<span>손잡이 동아리</span></span>
+    <span class="b-sp"></span>
+    ${P.meta && P.meta.phase !== 'title' ? '<button class="b-btn" id="bHome">처음 화면</button>' : ''}
+    ${soundSlot('bar')}`;
+    mountSoundSlots($('#bar'));
+    const h = $('#bHome'); if (h) h.onclick = aloneHome;
+    return;
+  }
   $('#bar').innerHTML = `
     <span class="b-title">${emblemHTML()}<span>손잡이 동아리</span></span>
     ${P.joined ? `<span class="b-chip strong"><b class="num">${P.num}</b>번</span>` : ''}
@@ -170,6 +184,7 @@ function renderJoin() {
 }
 
 function render() {
+  if (P.alone) return renderAlone();
   if (P.joined) document.body.classList.remove('at-title');
   renderBar();
   if (!P.joined) return;
@@ -297,12 +312,22 @@ function renderRefl(extraTop = '') {
 // 이 기기 안의 진행 상태: { run:{g,name,ch}, pos:{k,id,i}, first:{done,e,l}, dex:{E1m:1..}, seen:[id], runNo }
 const soloKey = () => `vn.solo.${P.code}.${P.roomAt}`;   // 방 코드는 다시 쓰일 수 있어 만든 시각까지 붙인다
 const reflKey = () => `vn.refl.${P.code}.${P.roomAt}`;
+/** 저장된 엔딩 기록(망가진 값은 빈 기록으로) */
+function aloneDex() {
+  const d = LS.get(LS_DEX, {});
+  return d && typeof d === 'object' && !Array.isArray(d) ? d : {};
+}
+const newSolo = () => ({ run: { g: null, name: null, ch: {} }, pos: { k: 'gender' }, first: null, dex: {}, seen: [], runNo: 1 });
 function loadSolo() {
+  if (P.alone) return { ...newSolo(), dex: aloneDex() };
   const s = LS.get(soloKey());
   if (s && s.run && s.pos) return s;
-  return { run: { g: null, name: null, ch: {} }, pos: { k: 'gender' }, first: null, dex: {}, seen: [], runNo: 1 };
+  return newSolo();
 }
-function saveSolo() { LS.set(soloKey(), P.solo); }
+function saveSolo() {
+  if (P.alone) { if (Object.keys(P.solo.dex).length) LS.set(LS_DEX, { ...aloneDex(), ...P.solo.dex }); return; }
+  LS.set(soloKey(), P.solo);
+}
 
 function sendProgress() {
   const s = P.solo;
@@ -347,7 +372,7 @@ function soloStep() {
         <button class="vbtn" data-g="m">${faceHTML('hangyeol', 0, 'big')}<span class="vb-t">남학생</span></button>
         <button class="vbtn" data-g="f">${faceHTML('daon', 0, 'big')}<span class="vb-t">여학생</span></button>
         <button class="vbtn" data-g="r"><span class="vb-n">🎲</span><span class="vb-t">랜덤</span></button>
-      </div><p class="pv-sub small">고른 성별과 이름은 이 기기에만 있어요. 선생님 화면에는 나오지 않아요.</p></div>`)
+      </div><p class="pv-sub small">${P.alone ? '고른 주인공과 이름은 저장하지 않아요.' : '고른 성별과 이름은 이 기기에만 있어요. 선생님 화면에는 나오지 않아요.'}</p></div>`)
       && main.querySelectorAll('[data-g]').forEach(b => { b.onclick = () => {
         let g = b.dataset.g;
         if (g === 'r') { g = randInt(2) ? 'f' : 'm'; run.g = g; run.name = S.NAMES[g][randInt(4)]; startStory(); return; }
@@ -544,7 +569,7 @@ function renderSoloCard() {
         ${id === 'E10' ? `<div class="hint">💡 ${esc(S.E10_HINT[run.ch.V11] || '')}</div>` : ''}</div>
       ${cardHTML(n.card)}
     </div>
-    <div class="pv-row"><button class="btn big" id="bDone">${s.runNo === 1 ? '생각 정리하러 가기 ▶' : '엔딩 도감 ▶'}</button></div>
+    <div class="pv-row"><button class="btn big" id="bDone">${s.runNo === 1 && !P.alone ? '생각 정리하러 가기 ▶' : '엔딩 도감 ▶'}</button></div>
   </div>`)) return;
   $('#bDone').onclick = () => { s.pos = { k: 'done' }; saveSolo(); P.screen = ''; render(); };
   sfx('reveal'); confetti(main.querySelector('.ec-head'), 30, { paper: true });
@@ -568,6 +593,7 @@ function statsHTML(stats) {
 }
 
 function renderSoloDone(closed) {
+  if (P.alone) return renderAloneDex(true);
   const s = P.solo;
   const stats = P.core && P.core.stats;
   // 첫 판이면 먼저 성찰
@@ -591,6 +617,73 @@ function renderSoloDone(closed) {
   if (r) r.onclick = () => { P.reflEdit = true; P.screen = ''; renderRefl(); };
 }
 
+// ── 혼자 하기 ────────────────────────────────────────────────────
+function renderAlone() {
+  const ph = P.meta.phase;
+  document.body.classList.toggle('at-title', ph === 'title');
+  renderBar();
+  if (ph === 'title') return renderAloneTitle();
+  if (ph === 'dex') return renderAloneDex(false);
+  return renderSoloMode();
+}
+
+function renderAloneTitle() {
+  if (P.screen === 'a-title') return;
+  P.screen = 'a-title';
+  const d = P.solo.dex;
+  const found = S.ENDING_IDS.filter(e => d[e] || d[e + 'm'] || d[e + 'f']).length;
+  main.innerHTML = `
+  <div class="ts ts-host">
+    ${kvHTML()}<div class="ts-veil" aria-hidden="true"></div>
+    ${petalsHTML(18, 11)}
+    <div class="ts-col">
+      ${logoHTML('', 'div')}
+      <nav class="ts-menu" aria-label="시작 메뉴">
+        <button class="menu-i main" id="bStartAlone">이야기 시작 <small>혼자서 약 25분</small></button>
+        <button class="menu-i" id="bDexAlone">엔딩 도감 <small>${found} / 10</small></button>
+      </nav>
+    </div>
+    <footer class="ts-foot"><span>엔딩 기록만 이 브라우저에 남아요 · 중간 저장은 없어요</span>${soundSlot('ts')}<span class="ts-credit">글꼴 Noto Serif KR · OFL</span></footer>
+  </div>`;
+  mountSoundSlots(main);
+  music('open');
+  $('#bStartAlone').onclick = () => {
+    sfx('select');
+    P.solo = loadSolo(); P.lastChapter = null; P.lastGrade = null;
+    P.meta.phase = 'play'; P.screen = ''; render();
+  };
+  $('#bDexAlone').onclick = () => { sfx('select'); P.meta.phase = 'dex'; P.screen = ''; render(); };
+  $('#bStartAlone').focus({ preventScroll: true });
+}
+
+/** 엔딩 도감. again = 방금 졸업했을 때(「다른 졸업식 찾기」가 있다) */
+function renderAloneDex(again) {
+  const s = P.solo;
+  const key = `a-dex-${again}-${Object.keys(s.dex).length}`;
+  if (P.screen === key) return;
+  P.screen = key;
+  main.innerHTML = `<div class="done-wrap alone"><div class="done-col">${dexHTML(s.dex)}
+    <div class="pv-row">
+      ${again ? '<button class="btn big" id="bAgain">다른 졸업식 찾기 ▶</button>' : ''}
+      <button class="btn ${again ? 'ghost' : 'big'}" id="bTitle">처음 화면</button>
+    </div>
+    <p class="dim small">엔딩 기록은 이 브라우저에만 남아요.</p></div></div>`;
+  const a = $('#bAgain');
+  if (a) a.onclick = () => {
+    s.runNo++; s.run = { g: null, name: null, ch: {} }; s.pos = { k: 'gender' };
+    P.lastChapter = null; P.lastGrade = null;
+    P.screen = ''; render();
+  };
+  $('#bTitle').onclick = aloneHome;
+}
+
+function aloneHome() {
+  const k = P.solo.pos.k;
+  if (P.meta.phase === 'play' && k !== 'gender' && k !== 'done' && !confirm('처음 화면으로 갈까요?\n진행 중인 이야기는 저장되지 않아요.')) return;
+  stopVoice();
+  P.solo = loadSolo(); P.meta.phase = 'title'; P.screen = ''; render();
+}
+
 // ── 알림 ─────────────────────────────────────────────────────────
 function toast(msg) {
   const box = $('#toasts');
@@ -611,11 +704,17 @@ document.addEventListener('keydown', e => {
 });
 
 // ── 시작 ─────────────────────────────────────────────────────────
-renderBar();
-const saved = LS.get(LS_JOIN);
-const q = new URLSearchParams(location.search);
-const fresh = saved && Date.now() - saved.at < 6 * 3600 * 1000;
-if (q.get('code') && /^\d{4}$/.test(q.get('code')) && !(fresh && saved.code === q.get('code'))) { P.code = q.get('code'); renderJoin(); }
-else if (fresh) join(saved.code, saved.num, true);
-else renderJoin();
-connect().catch(() => {});
+if (P.alone) {
+  P.meta = { mode: 'solo', phase: 'title' };
+  P.solo = loadSolo();
+  render();
+} else {
+  renderBar();
+  const saved = LS.get(LS_JOIN);
+  const q = new URLSearchParams(location.search);
+  const fresh = saved && Date.now() - saved.at < 6 * 3600 * 1000;
+  if (q.get('code') && /^\d{4}$/.test(q.get('code')) && !(fresh && saved.code === q.get('code'))) { P.code = q.get('code'); renderJoin(); }
+  else if (fresh) join(saved.code, saved.num, true);
+  else renderJoin();
+  connect().catch(() => {});
+}
