@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.md': 'text/plain; charset=utf-8' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.md': 'text/plain; charset=utf-8', '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.ogg': 'audio/ogg' };
 
 export function startStatic({ port = 8080, root = path.join(here, '../site') } = {}) {
   const server = http.createServer((req, res) => {
@@ -16,7 +16,17 @@ export function startStatic({ port = 8080, root = path.join(here, '../site') } =
     if (!f.startsWith(root)) { res.writeHead(403); return res.end(); }
     fs.readFile(f, (err, data) => {
       if (err) { res.writeHead(404); return res.end('not found'); }
-      res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
+      const type = TYPES[path.extname(f)] || 'application/octet-stream';
+      // 영상은 범위 요청(Range)으로 받는다 — 실제 Netlify 처럼 206 으로 잘라 준다
+      const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+      if (m) {
+        const a = m[1] ? Number(m[1]) : Math.max(0, data.length - Number(m[2]));
+        const b = m[1] && m[2] ? Math.min(Number(m[2]), data.length - 1) : data.length - 1;
+        if (a >= data.length || a > b) { res.writeHead(416, { 'Content-Range': `bytes */${data.length}` }); return res.end(); }
+        res.writeHead(206, { 'Content-Type': type, 'Content-Range': `bytes ${a}-${b}/${data.length}`, 'Accept-Ranges': 'bytes', 'Content-Length': b - a + 1, 'Cache-Control': 'no-store' });
+        return res.end(data.subarray(a, b + 1));
+      }
+      res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-store' });
       res.end(data);
     });
   });

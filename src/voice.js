@@ -22,7 +22,7 @@ function canPlay() {
 /** 지금 목소리를 내도 되나: 잠금(전체 모드 학생 기기) · 끔 · 해설 읽기 끔이면 안 낸다 */
 export function voiceOn(line) {
   const s = soundState();
-  if (s.locked || !s.voice || !canPlay()) return false;
+  if (s.locked || s.hushed || !s.voice || !canPlay()) return false;   // PV 창이 열려 있으면 읽지 않는다
   if (line && !line.role && !line.char && s.narr === false) return false;
   return true;
 }
@@ -68,7 +68,7 @@ export function speaking() { return !!(V.cur && !V.cur.paused && !V.cur.ended); 
 // 설정이 바뀌면(끄기 · 잠금) 바로 멈추고, 크기는 바로 맞춘다
 onSoundChange(s => {
   if (!V.cur) return;
-  if (s.locked || !s.voice) stopVoice();
+  if (s.locked || s.hushed || !s.voice) stopVoice();
   else V.cur.volume = Math.max(0, Math.min(1, s.voiceVol ?? 0.9));
 });
 if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) stopVoice(); });

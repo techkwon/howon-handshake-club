@@ -150,7 +150,7 @@ export function initSound({ page, defaults = {}, locked = false } = {}) {
 export function soundState() {
   return {
     page: S.page, locked: S.locked, bgm: S.pref.bgm, sfx: S.pref.sfx, bgmVol: S.pref.bgmVol, sfxVol: S.pref.sfxVol, track: S.pref.track, motion: S.pref.motion,
-    voice: !!S.pref.voice, voiceVol: S.pref.voiceVol, narr: S.pref.narr !== false, ducked: !!S.ducked,
+    voice: !!S.pref.voice, voiceVol: S.pref.voiceVol, narr: S.pref.narr !== false, ducked: !!S.ducked, hushed: !!S.hushed,
     want: S.want, playing: S.cur ? S.cur.id : null, mood: S.mood, ctx: S.ctx ? S.ctx.state : 'none', amb: S.amb, ambOn: !!S.ambNode,
   };
 }
@@ -259,7 +259,7 @@ const masterGain = v => Math.pow(Math.min(1, Math.max(0, v)), 1.5) * 2.2;
 function applyLevels(now = false) {
   const c = S.ctx, t = c.currentTime, k = now ? 0.01 : 0.3;
   const on = !S.locked;
-  S.master.gain.setTargetAtTime(on ? 1 : 0, t, k);
+  S.master.gain.setTargetAtTime(on && !S.hushed ? 1 : 0, t, k);
   S.bgmBus.gain.setTargetAtTime(on && S.pref.bgm ? BGM_BUS * masterGain(S.pref.bgmVol) * (S.ducked ? DUCK : 1) : 0, t, k);
   S.sfxBus.gain.setTargetAtTime(on && S.pref.sfx ? SFX_BUS * masterGain(S.pref.sfxVol) : 0, t, k);
 }
@@ -271,6 +271,19 @@ export function duck(on) {
   if (!S.ctx || S.locked || S.measuring) return;
   const t = S.ctx.currentTime;
   S.bgmBus.gain.setTargetAtTime(S.pref.bgm ? BGM_BUS * masterGain(S.pref.bgmVol) * (S.ducked ? DUCK : 1) : 0, t, on ? 0.08 : 0.35);
+}
+
+/** ▶ PV 영상 창이 열려 있는 동안: 게임 음악 · 효과음 · 환경음을 모두 조용히(전체 크기 0). 닫으면 원래 크기로.
+ *  곡은 멈추지 않고 소리만 줄인다 — 다시 열면 이어서 들린다. 소리 장치가 아직 없으면 상태만 기억(만들 때 applyLevels 가 본다) */
+export function hush(on) {
+  if (S.hushed === !!on) return;
+  S.hushed = !!on;
+  if (S.ctx && !S.locked && !S.measuring) {
+    const t = S.ctx.currentTime;
+    if (S.hushed) { S.master.gain.cancelScheduledValues(t); S.master.gain.setTargetAtTime(0, t, 0.06); }
+    else applyLevels();
+  }
+  changed();
 }
 
 // ── 배경 음악 ────────────────────────────────────────────────────

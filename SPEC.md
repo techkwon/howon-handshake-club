@@ -24,6 +24,7 @@ _개발/
   src/play.js         크롬북 (index.html)
   src/shared.js       방 코드 · 성찰 질문 · 학생 수(seatsOf) · 작은 도구
   src/sound.js        소리: BGM 5곡(악보 TRACKS) · 효과음 SFX · 켜기/끄기 · 곡 고르기 · 크기 · 점검(measure) — Web Audio 로 합성
+  src/pv.js           ▶ PV 영상 창(타이틀 세 곳) — site/video/pv.mp4 · pv.jpg
   src/fx.js           화면 효과: 분위기 · 날씨 캔버스 · 감정 표시 · 흔들림 · 빛 · 꼬리표 · 꽃가루 · 글자 찍기 · 눌러 넘기기 판정
   src/net*.js         Firebase / 시험용 가짜 DB 연결 (대결 판 것을 가져와 앱 이름만 'vn')
   src/art-manifest.json   그림 목록(tools/art.py 가 만든다)
@@ -208,3 +209,18 @@ _개발/
 - 「눌러도 넘어가요」 안내는 대사 상자 위 테두리에 걸쳐 따라다닌다(fx.js `hintOnce`) — 대사 글자를 덮으면 안 된다.
 - 엔딩 카드(진행판): 제목 · 한 줄 말이 칸에 눌려 숨지 않게 `.endcard>*{flex-shrink:0}` + 낮은 화면 촘촘하게. `test/shots.mjs` 가 `titleClear` 로 확인.
 - 시험 `node test/contrast.mjs`(→ `test/shots/contrast_report.json`).
+
+## 11. ▶ PV 영상 창 (2026-11-03)
+
+- 파일 `site/video/pv.mp4`(H.264 + AAC · 1280×720 · `-movflags +faststart` · 약 11 MB · 48.6초) + `pv.jpg`(첫 그림 1280×720). 원본 · 웹 판 제작은 `../PV/`(다른 작업 담당). **이름이 같으면 파일만 바꿔 넣는다** — 코드 · 빌드 변경 없음. `_headers` 의 `/video/*` 캐시는 하루
+- 엔딩별 영상은 **만들지 않는다**(교사 결정 2026-11-03 취소)
+- `src/pv.js`: `pvMenuHTML()`(진행판 · 혼자 하기 `.ts-menu` 의 `#bPV`) · 학생 들어가기는 양식 밖 `.pv-open#bPV` · `openPV({ muted, from })` · `closePV()` · `pvOpen()`
+  - `<video preload="none" poster controls playsinline>` + 가운데 ▶(`.pvx-play`) — **저절로 틀지 않는다**(누르기 전엔 영상 요청 없음)
+  - 열면 `stopVoice()` + `hush(true)`(sound.js — 전체 크기 0, 곡은 계속 돌며 소리만 0 · `soundState().hushed`), 닫으면 `hush(false)`. 열린 동안 `voiceOn()` 은 거짓
+  - 닫기 ✕ · Esc(영상 전체 화면 중의 Esc 는 브라우저가 전체 화면만 푼다) · 바깥 누르기. 닫으면 영상 `src` 를 지워 받기도 끊고, 포커스는 「PV 보기」 단추로
+  - 열린 동안 뒤 화면(body 의 다른 자식)은 `inert` · 창 앞뒤 지킴이(`.pvx-guard`)로 Tab 이 창 안을 돈다(영상 안 단추는 브라우저 그대로) · 창 안 키는 뒤 화면의 「다음」 키로 새지 않는다
+  - 학생 들어가기 화면은 `muted`(교실 크롬북 · 영상 🔈 로 켬). 진행판 · 혼자 하기는 소리 켬
+  - 못 불러오면(404 · 네트워크) 영상 틀 안에 알림 + 포커스 ✕ — 멈춘 상태가 없다. `NotAllowedError` 면 ▶ 를 다시 보여 준다
+  - 크기: 16:9 틀의 너비를 화면 높이에서 거꾸로 셈(`(100dvh − 머리 줄) × 16/9`, 최대 1600px) — 800×600 ~ 2560×1440 · 768×1024 · 375×812 에서 틀 · ✕ 가 화면 안
+- 시험 `node test/video.mjs`(246개): 세 타이틀 단추 · 11개 화면 크기 얼굴 가림 · 열어도 안 틂 · preload none · 첫 그림 · 재생 · hushed 켬/풀림 · 여는 곡 유지 · ✕ / Esc / 바깥 · 창 안 누르기는 안 닫힘 · Tab · Shift+Tab · inert · 학생 muted · 잠금 유지 · 404 알림 · 이야기 시작 · 방 만들기 그대로. 시험 서버(`test/serve.mjs`)는 Range(206) · mp4 · jpg 를 받는다. 실제 재생은 크롬 채널(H.264)이 있어야 한다
+- Codex 검토: 1차 중간 2 · 낮음 1(Tab 이 영상 안 단추를 건너뜀 · 실패 알림이 창을 화면 밖으로 밂 · 숨긴 ▶ 에 포커스) 모두 고침 → 2차 「높음 · 중간 없음」

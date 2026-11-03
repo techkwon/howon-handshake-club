@@ -18,6 +18,10 @@
 /img/*
   Cache-Control: public, max-age=86400
 
+# PV 영상: 같은 이름(pv.mp4 · pv.jpg)으로 바꿔 넣으므로 하루만
+/video/*
+  Cache-Control: public, max-age=86400
+
 /host.html
   X-Robots-Tag: noindex
 

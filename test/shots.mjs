@@ -46,7 +46,7 @@ async function multiView(page, name, noHScroll) {
     ok(!fc.hits.length, `${name}@${w}x${h}: 얼굴 가림 없음${fc.hits.length ? ' — ' + fc.hits.slice(0, 3).join(' / ') : ''}`);
     if (fc.hits.length) await page.screenshot({ path: path.join(DIR, `face_fail_${name}@${w}x${h}.png`) });
     // 타이틀의 중요한 단추는 화면 안에 있거나(넘치면) 스크롤로 닿을 수 있어야 한다
-    const lost = await page.evaluate(() => ['#bNew', '#bCreate', '#bBackMenu', '#bBoard', '#bOffline', '#joinF [type=submit]'].filter(sel => {
+    const lost = await page.evaluate(() => ['#bNew', '#bCreate', '#bBackMenu', '#bBoard', '#bOffline', '#joinF [type=submit]', '#bPV'].filter(sel => {
       const b = document.querySelector(sel); if (!b || !b.offsetParent) return false;
       b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       const r = b.getBoundingClientRect(), bad = r.top < 0 || r.bottom > innerHeight + 1 || r.left < 0 || r.right > innerWidth + 1;

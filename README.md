@@ -161,6 +161,16 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 - 설정(켜기 · 곡 · 크기 · 움직임)은 그 컴퓨터에 기억된다. 탭을 다른 데로 옮기면 소리가 멈춘다
 - **🗣 목소리(풀 보이스)**: 인물 대사와 해설을 녹음으로 읽어 준다(Gemini 음성으로 미리 만든 `site/voice/*.ogg` 317개 · 약 23분 · 5.5MB). 진행판은 처음부터 켬 · 개인 모드 크롬북은 처음엔 끔(이어폰을 끼고 🗣 로 켬) · 전체 모드 크롬북은 늘 소리 없음. ⚙ 설정에서 목소리 켜기 · 크기 · 「해설 읽기」 따로 끄기. 말하는 동안 배경음악은 30% 작아진다. 전체 모드는 줄마다 녹음이 끝날 때까지(+0.45초) 기다렸다 넘어간다 — 한 판 시간은 거의 같다. 글을 고치면 그 줄은 녹음이 없어져 소리 없이 글만 나온다(다시 녹음해야 함)
 
+## ▶ PV(소개 영상)
+
+세 시작 화면(진행판 메뉴 · 학생 들어가기 화면 · 혼자 하기 메뉴)에 **▶ PV 보기** 가 있다. 누르면 화면 가운데 16:9 영상 창이 뜬다.
+
+- **저절로 틀지 않는다** — 첫 그림만 보이고 가운데 ▶ 를 눌러야 재생(누르기 전에는 영상을 받지도 않는다)
+- 창이 열린 동안 게임 음악 · 효과음은 조용해지고 목소리는 멈춘다 → 닫으면 원래대로
+- 닫기: **✕ · Esc · 영상 바깥(어두운 곳) 누르기**. 영상을 못 불러오면 창 안에 「불러오지 못했어요」만 뜨고 닫을 수 있다
+- 학생 들어가기 화면에서는 **소리 끈 채로** 열린다(교실 크롬북이 한꺼번에 울리지 않게 · 영상 아래 🔈 로 켬)
+- 파일: `site/video/pv.mp4`(H.264 + AAC · 1280×720 · faststart) + `site/video/pv.jpg`(첫 그림). **같은 이름으로 바꿔 넣고 배포만 하면 된다**(코드 · 빌드 그대로)
+
 ## 화면 효과
 
 장면이 바뀔 때 넘김(학년 · 달이 바뀌면 책장 넘기기) · 인물 들어오기 · 말하는 사람 깡충 · 감정 표시(✨ 💡 💧 ♪ — 머리 **옆**) · 놀람 장면 흔들림 · 기술이 켜지면 빛 · 지표 「+2 함께」 · 배경마다 날씨(빗물 탱크 비 · 눈 · 밤 반딧불 · 봄 꽃잎 · 동아리방 먼지 빛) · 투표 막대 차오름 · 엔딩 꽃가루. **어떤 효과도 인물 얼굴을 덮지 않는다**(날씨는 인물 뒤에 그리고 머리 둘레는 비워 둔다). ⚙ 설정의 움직임 「끄기」(또는 컴퓨터 「움직임 줄이기」)면 날씨 · 흔들림 · 글자 찍기 · 꽃가루가 모두 꺼진다.
@@ -194,7 +204,8 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 | 음악 · 효과음 고치기 | `src/sound.js` 맨 위 `TRACKS`(화음 · 선율 악보) · 아래 `SFX` |
 | 목소리 다시 녹음 | 글이 바뀐 줄 · 빠진 줄만 다시 만들어 `site/voice/` 와 `src/voice-manifest.json` 에 넣는다(녹음 열쇠 = 그림 id + 화면 글 해시, `src/voice-key.js`) → `node test/voice.mjs` · `node test/voice_play.mjs` |
 | 화면 효과 고치기 | `src/fx.js`(날씨 · 감정 표시 · 흔들림 · 글자 찍기 · 넘기기 판정) · `site/styles.css` 끝 |
-| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/alone.mjs`(혼자 하기) · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
-| 배포 | `npm run build` 뒤 `netlify deploy --prod --no-build --dir site --site <site id>` |
+| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/alone.mjs`(혼자 하기) · `node test/video.mjs`(PV 영상 창) · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
+| PV 바꾸기 | 새 `pv.mp4` · `pv.jpg` 를 `site/video/` 에 같은 이름으로 덮어쓴다 → `node test/video.mjs`(열기 · 닫기 · 소리 · 실패 알림 · 화면 크기) → 배포 |
+| 배포 | `npm run build` 뒤 `netlify deploy --prod --no-build --dir site --site <site id>` (`site/` 를 바로 올린다 — `site/voice/` · `site/video/` 포함) |
 
 설계 · 데이터 · 보안 규칙은 `SPEC.md`.

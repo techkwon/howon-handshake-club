@@ -8,6 +8,7 @@ import * as S from './story.js';
 import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
 import { initSound, setLocked, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
 import { speak, stopVoice, preloadVoice } from './voice.js';
+import { openPV, pvOpen, pvMenuHTML } from './pv.js';
 import { moodOf, lineFx, emote, shake, techBurst, floatChips, confetti, emphasize, endingReveal, chapterOf, chapterCard, cardSkip, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
 import { ROOT, MAX_NUM, seatsOf, esc, parseJSON, devTag, CIRCLED, LS, REFL_Q, MAX_REFL, randInt } from './shared.js';
 
@@ -176,11 +177,13 @@ function renderJoin() {
         <p class="errbox" role="alert" ${P.err ? '' : 'hidden'}>${esc(P.err)}</p>
         <p class="dim small">이름은 넣지 않아요. 번호만!</p>
       </form>
+      <button class="btn ghost pv-open" id="bPV" type="button" aria-haspopup="dialog">▶ PV 보기 <small>소개 영상</small></button>
     </div>
     <footer class="ts-foot"><span>성적 미반영 · 이름을 받지 않아요</span><span class="ts-credit">글꼴 Noto Serif KR · OFL</span></footer>
   </div>`;
   $('#joinF').onsubmit = e => { e.preventDefault(); join($('#iCode').value.trim(), Number($('#iNum').value.trim())); };
-  (P.code ? $('#iNum') : $('#iCode')).focus();
+  $('#bPV').onclick = e => openPV({ muted: true, from: e.currentTarget });   // 학생 크롬북: 처음엔 소리 끔(교실에서 한꺼번에 울리지 않게)
+  if (!pvOpen()) (P.code ? $('#iNum') : $('#iCode')).focus();
 }
 
 function render() {
@@ -641,6 +644,7 @@ function renderAloneTitle() {
       <nav class="ts-menu" aria-label="시작 메뉴">
         <button class="menu-i main" id="bStartAlone">이야기 시작 <small>혼자서 약 25분</small></button>
         <button class="menu-i" id="bDexAlone">엔딩 도감 <small>${found} / 10</small></button>
+        ${pvMenuHTML()}
       </nav>
     </div>
     <footer class="ts-foot"><span>엔딩 기록만 이 브라우저에 남아요 · 중간 저장은 없어요</span>${soundSlot('ts')}<span class="ts-credit">글꼴 Noto Serif KR · OFL</span></footer>
@@ -653,7 +657,8 @@ function renderAloneTitle() {
     P.meta.phase = 'play'; P.screen = ''; render();
   };
   $('#bDexAlone').onclick = () => { sfx('select'); P.meta.phase = 'dex'; P.screen = ''; render(); };
-  $('#bStartAlone').focus({ preventScroll: true });
+  $('#bPV').onclick = e => openPV({ from: e.currentTarget });
+  if (!pvOpen()) $('#bStartAlone').focus({ preventScroll: true });
 }
 
 /** 엔딩 도감. again = 방금 졸업했을 때(「다른 졸업식 찾기」가 있다) */

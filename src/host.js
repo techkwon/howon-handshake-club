@@ -7,6 +7,7 @@ import { countVotes, resolveVote } from './vote.js';
 import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
 import { initSound, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
 import { speak, stopVoice, preloadVoice, VOICE_PAD } from './voice.js';
+import { openPV, pvOpen, pvMenuHTML } from './pv.js';
 import { moodOf, lineFx, emote, shake, bloom, techBurst, floatChips, confetti, winBurst, tallyDrama, countdown, emphasize, endingReveal, chapterOf, chapterCard, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
 import { ROOT, MAX_NUM, DEFAULT_SEATS, seatsOf, seatLabel, DAY_MS, esc, parseJSON, newRoomCode, devTag, CIRCLED, LS, REFL_Q, randInt, gradeOf, GRADE_LABEL, speedFactor } from './shared.js';
 
@@ -132,6 +133,7 @@ function renderStart(st) {
         ${canResume ? `<button class="menu-i" id="bResume">이어서 하기 <small>${seatsOf(snap.meta)}명 · ${snap.offline ? '비상 모드' : '방 ' + esc(snap.code)}</small></button>` : ''}
         <button class="menu-i" id="bOffline" title="인터넷이 안 될 때: 학생 투표 없이 교사가 갈림길을 고른다">비상 모드 <small>인터넷 없이 · 전체</small></button>
         <button class="menu-i" id="bBoard" aria-expanded="${boardOpen}" aria-controls="tsBoard">반 기록판 <small>${board.length ? board.length + '개' : '아직 없음'}</small></button>
+        ${pvMenuHTML()}
       </nav>`}
       <aside class="ts-board panel" id="tsBoard" ${boardOpen ? '' : 'hidden'} aria-label="반 기록판">
         <div class="lbl">반 기록판 <span class="dim">(이 컴퓨터에만 · 이름 · 번호 없음)</span></div>
@@ -171,6 +173,7 @@ function renderStart(st) {
   on('bOffline', () => startOffline());
   on('bBoard', () => { boardOpen = !boardOpen; $('#tsBoard').hidden = !boardOpen; $('#bBoard').setAttribute('aria-expanded', String(boardOpen)); });
   on('bResume', () => resume(snap));
+  on('bPV', e => openPV({ from: e.currentTarget }));
   // 메뉴는 위 · 아래 화살표로도 움직인다
   const items = [...stage.querySelectorAll('.ts-menu .menu-i')];
   items.forEach(b => b.onkeydown = e => {
@@ -185,7 +188,7 @@ function renderStart(st) {
     sp.onclick = hideSplash;
     sp.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hideSplash(); } };
     if (ready || st.failed) { sp.focus({ preventScroll: true }); setTimeout(() => { if (H.view.kind === 'start') hideSplash(); }, 2600 / SPEED); }
-  } else if (ready && startStep === 'menu' && $('#bNew')) $('#bNew').focus({ preventScroll: true });
+  } else if (ready && startStep === 'menu' && $('#bNew') && !pvOpen()) $('#bNew').focus({ preventScroll: true });
 }
 
 async function createRoom() {
