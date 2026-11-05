@@ -8,9 +8,10 @@ import * as S from './story.js';
 import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, cgKey, statIcon, petalsHTML, logoHTML, emblemHTML, kvHTML, cgHead } from './stage.js';
 import { initSound, setLocked, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
 import { speak, stopVoice, preloadVoice } from './voice.js';
-import { openPV, pvOpen, pvMenuHTML } from './pv.js';
+import { openPV, pvOpen, pvMenuHTML, pvYoutubeHTML } from './pv.js';
+import { startIntro } from './intro.js';
 import { moodOf, lineFx, emote, shake, techBurst, floatChips, confetti, emphasize, endingReveal, chapterOf, chapterCard, cardSkip, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
-import { ROOT, MAX_NUM, seatsOf, esc, parseJSON, devTag, CIRCLED, LS, REFL_Q, MAX_REFL, randInt } from './shared.js';
+import { menuIcon, ROOT, MAX_NUM, seatsOf, esc, parseJSON, devTag, CIRCLED, LS, REFL_Q, MAX_REFL, randInt } from './shared.js';
 
 const $ = s => document.querySelector(s);
 const main = $('#main');
@@ -173,11 +174,11 @@ function renderJoin() {
           <label class="jl">내 번호 <span class="dim">1~${MAX_NUM}</span>
             <input id="iNum" class="jin num" inputmode="numeric" maxlength="2" pattern="[0-9]*" value="${esc(P.num || (saved && saved.num) || '')}" aria-label="내 번호"></label>
         </div>
-        <button class="btn big main" type="submit">들어가기 ▶</button>
+        <button class="btn big main ic-btn" type="submit">${menuIcon('door')}들어가기 ▶</button>
         <p class="errbox" role="alert" ${P.err ? '' : 'hidden'}>${esc(P.err)}</p>
         <p class="dim small">이름은 넣지 않아요. 번호만!</p>
       </form>
-      <button class="btn ghost pv-open" id="bPV" type="button" aria-haspopup="dialog">▶ PV 보기 <small>소개 영상</small></button>
+      <button class="btn ghost pv-open ic-btn" id="bPV" type="button" aria-haspopup="dialog">${menuIcon('film')}PV 보기 <small>소개 영상</small></button>
     </div>
     <footer class="ts-foot"><span>성적 미반영 · 이름을 받지 않아요</span><span class="ts-credit">글꼴 Noto Serif KR · OFL</span></footer>
   </div>`;
@@ -642,10 +643,11 @@ function renderAloneTitle() {
     <div class="ts-col">
       ${logoHTML('', 'div')}
       <nav class="ts-menu" aria-label="시작 메뉴">
-        <button class="menu-i main" id="bStartAlone">이야기 시작 <small>혼자서 약 25분</small></button>
-        <button class="menu-i" id="bDexAlone">엔딩 도감 <small>${found} / 10</small></button>
+        <button class="menu-i main" id="bStartAlone">${menuIcon('story')}이야기 시작 <small>혼자서 약 25분</small></button>
+        <button class="menu-i" id="bDexAlone">${menuIcon('diploma')}엔딩 도감 <small>${found} / 10</small></button>
         ${pvMenuHTML()}
       </nav>
+      ${pvYoutubeHTML('ts-yt')}
     </div>
     <footer class="ts-foot"><span>엔딩 기록만 이 브라우저에 남아요 · 중간 저장은 없어요</span>${soundSlot('ts')}<span class="ts-credit">글꼴 Noto Serif KR · OFL</span></footer>
   </div>`;
@@ -713,13 +715,19 @@ if (P.alone) {
   P.meta = { mode: 'solo', phase: 'title' };
   P.solo = loadSolo();
   render();
+  introStart(false);
 } else {
   renderBar();
   const saved = LS.get(LS_JOIN);
   const q = new URLSearchParams(location.search);
   const fresh = saved && Date.now() - saved.at < 6 * 3600 * 1000;
+  let rejoin = false;
   if (q.get('code') && /^\d{4}$/.test(q.get('code')) && !(fresh && saved.code === q.get('code'))) { P.code = q.get('code'); renderJoin(); }
-  else if (fresh) join(saved.code, saved.num, true);
+  else if (fresh) { rejoin = true; join(saved.code, saved.num, true); }
   else renderJoin();
   connect().catch(() => {});
+  introStart(rejoin);   // 수업 중 새로 고침(같은 방에 다시 들어감)은 로고 없이 바로 — 전체 화면은 첫 누름에
+}
+function introStart(quiet) {
+  startIntro({ quiet }).catch(() => { document.querySelectorAll('.tk-intro').forEach(x => x.remove()); });   // 테크권 로고 인트로 — 실패해도 화면은 그대로
 }

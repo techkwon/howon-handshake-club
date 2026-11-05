@@ -44,6 +44,11 @@ KV_FACES = [
     [.600, .345, .765, .585],   # 머리핀 다온
     [.820, .340, .960, .560],   # 화분 한결
 ]
+# 칸에 맞춰 그린 판(4열 × 3행 등): 덩어리 대신 칸을 잘라 쓴다(반짝이처럼 떨어진 조각도 같은 아이콘에 남게). 이름은 위→아래 · 왼→오
+# 타이틀 메뉴 아이콘(2026-11-05) — src/shared.js MENU_ICONS 와 같은 차례. 결과 img/ui/mi_{이름}.webp(긴 변 128px)
+GRIDS = {
+    'UI/ui_menu_icons.png': ('magenta', 4, 3, ['door', 'key', 'book', 'hand', 'board', 'film', 'story', 'diploma', 'tv', 'home', 'gear', 'note'], 128, 'mi_'),
+}
 # 9개(꽃잎 6 + 반짝이 3)처럼 종류가 섞인 판은 색으로 가른다: 노란 기운이 큰 것 = 반짝이
 SPARK_SORT = 'UI/ui_particles.png'
 
@@ -194,6 +199,29 @@ def process(art: Path, out_dir: Path, site: Path, save_webp, fresh) -> dict:
                 p = site / f'icon-{s}.png'
                 em.resize((s, round(em.height * s / em.width)), Image.LANCZOS).quantize(colors=128, method=Image.Quantize.FASTOCTREE).save(p, optimize=True)
             ui['icon'] = {'src': 'icon-64.png', 'w': 64, 'h': 64}
+
+    # 칸 판(타이틀 메뉴 아이콘)
+    for rel, (key, cols, rows, names, size, prefix) in GRIDS.items():
+        src = art / rel
+        if not src.exists():
+            continue
+        outs = [out_dir / f'{prefix}{n}.webp' for n in names]
+        if not all(fresh(src, o) for o in outs):
+            rgba = unkey(np.asarray(Image.open(src).convert('RGB')), KEYS[key])
+            W, H = rgba.size
+            for i, (n, o) in enumerate(zip(names, outs)):
+                cx, cy = i % cols, i // cols
+                c = trim(rgba.crop((round(cx * W / cols), round(cy * H / rows), round((cx + 1) * W / cols), round((cy + 1) * H / rows))))
+                r = size / max(c.size)
+                if r < 1:
+                    c = c.resize((max(1, round(c.width * r)), max(1, round(c.height * r))), Image.LANCZOS)
+                save_webp(c, o, 86)
+            print(f'  UI {src.name} → {prefix}* {len(names)}개')
+        else:
+            print(f'  UI {src.name} (그대로)')
+        for n, o in zip(names, outs):
+            with Image.open(o) as im:
+                ui[prefix + n] = {'src': o.relative_to(site).as_posix(), 'w': im.width, 'h': im.height}
 
     # 종이 결(반복 무늬): 가운데 512 를 잘라 가장자리를 섞어 이음매를 줄인다
     src = art / 'UI' / 'ui_paper.png'

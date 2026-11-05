@@ -23,6 +23,10 @@ export const REFL_Q = [
     q: '우리 학교나 동네의 불편 하나를 골라, 「먼저 묻기 · 그곳 재료 · 쉬운 수리 · 싼 값 · 오래」 중 두 가지를 넣어 해결 방법을 한 줄로 써 보자.' },
 ];
 
+/** 타이틀 메뉴 그림 아이콘(코덱스 그림 · ../그림/UI/ui_menu_icons.png → site/img/ui/mi_*.webp, tools/ui_art.py) — 글 앞에 붙는 장식(읽기 프로그램은 건너뜀) */
+export const MENU_ICONS = ['door', 'key', 'book', 'hand', 'board', 'film', 'story', 'diploma', 'tv', 'home', 'gear', 'note'];
+export const menuIcon = n => `<i class="mi-ic ic-${n}" aria-hidden="true"></i>`;
+
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }

@@ -8,8 +8,9 @@ import { renderStage, boxHTML, cardHTML, lightsHTML, faceHTML, preload, artFor, 
 import { initSound, music, play as sfx, soundSlot, mountSoundSlots } from './sound.js';
 import { speak, stopVoice, preloadVoice, VOICE_PAD } from './voice.js';
 import { openPV, pvOpen, pvMenuHTML } from './pv.js';
+import { startIntro } from './intro.js';
 import { moodOf, lineFx, emote, shake, bloom, techBurst, floatChips, confetti, winBurst, tallyDrama, countdown, emphasize, endingReveal, chapterOf, chapterCard, typewrite, twBusy, twFinish, hintOnce, isAdvanceClick } from './fx.js';
-import { ROOT, MAX_NUM, DEFAULT_SEATS, seatsOf, seatLabel, DAY_MS, esc, parseJSON, newRoomCode, devTag, CIRCLED, LS, REFL_Q, randInt, gradeOf, GRADE_LABEL, speedFactor } from './shared.js';
+import { menuIcon, ROOT, MAX_NUM, DEFAULT_SEATS, seatsOf, seatLabel, DAY_MS, esc, parseJSON, newRoomCode, devTag, CIRCLED, LS, REFL_Q, randInt, gradeOf, GRADE_LABEL, speedFactor } from './shared.js';
 
 const $ = s => document.querySelector(s);
 const stage = $('#stage');
@@ -125,14 +126,14 @@ function renderStart(st) {
         <div class="lbl">글 넘기는 속도 <span class="dim">· 전체 모드 · 진행 중에도 바꿀 수 있어요</span></div>
         <div class="seg" id="segPace">${[['slow', '느리게'], ['normal', '보통'], ['fast', '빠르게']].map(([k, l]) => `<button class="segb ${pref.pace === k ? 'on' : ''}" data-v="${k}" aria-pressed="${pref.pace === k}">${l}</button>`).join('')}</div>
         <div class="setup-go">
-          <button class="menu-i main" id="bCreate" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : `방 만들기 <small>${pref.seats}명 · ${pref.mode === 'class' ? '전체' : '개인'} 모드</small>`}</button>
-          <button class="btn ghost small" id="bBackMenu">← 처음 화면</button>
+          <button class="menu-i main" id="bCreate" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : `${menuIcon('key')}방 만들기 <small>${pref.seats}명 · ${pref.mode === 'class' ? '전체' : '개인'} 모드</small>`}</button>
+          <button class="btn ghost small ic-btn" id="bBackMenu">${menuIcon('home')}처음 화면</button>
         </div>
       </section>` : `<nav class="ts-menu" aria-label="시작 메뉴">
-        <button class="menu-i main" id="bNew" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : '새 수업 시작 <small>학생 수 · 방식 고르기</small>'}</button>
-        ${canResume ? `<button class="menu-i" id="bResume">이어서 하기 <small>${seatsOf(snap.meta)}명 · ${snap.offline ? '비상 모드' : '방 ' + esc(snap.code)}</small></button>` : ''}
-        <button class="menu-i" id="bOffline" title="인터넷이 안 될 때: 학생 투표 없이 교사가 갈림길을 고른다">비상 모드 <small>인터넷 없이 · 전체</small></button>
-        <button class="menu-i" id="bBoard" aria-expanded="${boardOpen}" aria-controls="tsBoard">반 기록판 <small>${board.length ? board.length + '개' : '아직 없음'}</small></button>
+        <button class="menu-i main" id="bNew" ${ready ? '' : 'disabled'}>${st.connecting ? '연결 중…' : st.failed ? '연결 안 됨' : `${menuIcon('door')}새 수업 시작 <small>학생 수 · 방식 고르기</small>`}</button>
+        ${canResume ? `<button class="menu-i" id="bResume">${menuIcon('book')}이어서 하기 <small>${seatsOf(snap.meta)}명 · ${snap.offline ? '비상 모드' : '방 ' + esc(snap.code)}</small></button>` : ''}
+        <button class="menu-i" id="bOffline" title="인터넷이 안 될 때: 학생 투표 없이 교사가 갈림길을 고른다">${menuIcon('hand')}비상 모드 <small>인터넷 없이 · 전체</small></button>
+        <button class="menu-i" id="bBoard" aria-expanded="${boardOpen}" aria-controls="tsBoard">${menuIcon('board')}반 기록판 <small>${board.length ? board.length + '개' : '아직 없음'}</small></button>
         ${pvMenuHTML()}
       </nav>`}
       <aside class="ts-board panel" id="tsBoard" ${boardOpen ? '' : 'hidden'} aria-label="반 기록판">
@@ -710,7 +711,7 @@ function renderBar() {
       <span class="b-pace" role="group" aria-label="글 속도">${[['slow', '느리게'], ['normal', '보통'], ['fast', '빠르게']].map(([k, l]) => `<button class="b-btn ${H.pace === k ? 'on' : ''}" data-pace="${k}">${l}</button>`).join('')}</span>
       <button class="b-btn" id="bPick">교사가 정하기</button>` : ''}
     ${soundSlot('bar')}
-    ${m ? '<button class="b-btn" id="bFull" title="전체 화면">⛶</button><button class="b-btn danger" id="bEnd">수업 끝</button>' : ''}`;
+    ${m ? '<button class="b-btn danger" id="bEnd">수업 끝</button>' : ''}`;   // 전체 화면 단추는 소리 · ⚙ 줄 안(fullscreen.js)
   mountSoundSlots($('#bar'));
   const b = id => document.getElementById(id);
   if (b('bPause')) b('bPause').onclick = togglePause;
@@ -720,7 +721,6 @@ function renderBar() {
     H.picker = !H.picker; render();
   };
   document.querySelectorAll('[data-pace]').forEach(x => x.onclick = () => setPace(x.dataset.pace));
-  if (b('bFull')) b('bFull').onclick = () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); };
   if (b('bEnd')) b('bEnd').onclick = closeClass;
 }
 function renderPeople() {
@@ -1106,3 +1106,4 @@ H.fx = { emote: (role, k) => emote(stage.querySelector('.hp-stage'), role, k), b
 H.api = { next, togglePause, teacherDecide, closeClass: () => { window.confirm = () => true; return closeClass(); }, openRefl, setPace };
 
 boot();
+startIntro().catch(() => { document.querySelectorAll('.tk-intro').forEach(x => x.remove()); });   // 테크권 로고 인트로(타이틀 위) — 실패해도 타이틀은 그대로

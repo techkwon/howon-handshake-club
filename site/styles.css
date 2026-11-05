@@ -984,3 +984,57 @@ html[data-motion="off"] .vn-scene.shake,html[data-motion="off"] .vn-scene.pushin
 .pvx-play[hidden],.pvx-err[hidden]{display:none}
 .pvx-err{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max-content;max-width:86%;margin:0;padding:12px 18px;border-radius:10px;background:#fdecea;color:#7a1712;font-weight:800;text-align:center;line-height:1.5}   /* 영상 틀 안에 띄운다 — 줄이 늘어 창이 화면 밖으로 밀리지 않게 */
 @media (max-width:600px){.pvx{padding:8px}.pvx-box{width:100%}.pvx-head{flex-wrap:wrap;row-gap:2px}.pvx-hint{order:3;flex-basis:100%}.pvx-head b{flex:1}}
+
+/* ── 타이틀 메뉴 그림 아이콘 (2026-11-05) ─────────────────────────── */
+/* src/shared.js menuIcon(이름) → <i class="mi-ic ic-이름">. 그림은 ../그림/UI/ui_menu_icons.png(코덱스, 4×3 칸) → tools/ui_art.py GRIDS → img/ui/mi_*.webp */
+.mi-ic{flex:none;display:inline-block;width:var(--ic,1.5em);height:var(--ic,1.5em);background:center/contain no-repeat;vertical-align:middle;
+  filter:drop-shadow(0 1px 1.5px rgba(74,44,28,.28));transition:transform var(--d2) var(--ease)}
+.menu-i .mi-ic{--ic:clamp(30px,1.45em,50px);align-self:center;margin:-5px -2px -5px -6px}
+.menu-i:hover:not(:disabled) .mi-ic,.menu-i:focus-visible .mi-ic{transform:rotate(-7deg) scale(1.08)}
+.menu-i:disabled .mi-ic{filter:grayscale(.4)}
+.ic-btn{display:inline-flex;align-items:center;justify-content:center;gap:.35em}
+.ic-btn .mi-ic{--ic:1.5em;margin:-.25em 0 -.25em -.15em}
+.btn.small.ic-btn .mi-ic{--ic:1.6em}
+.ic-door{background-image:url(img/ui/mi_door.webp)}
+.ic-key{background-image:url(img/ui/mi_key.webp)}
+.ic-book{background-image:url(img/ui/mi_book.webp)}
+.ic-hand{background-image:url(img/ui/mi_hand.webp)}
+.ic-board{background-image:url(img/ui/mi_board.webp)}
+.ic-film{background-image:url(img/ui/mi_film.webp)}
+.ic-story{background-image:url(img/ui/mi_story.webp)}
+.ic-diploma{background-image:url(img/ui/mi_diploma.webp)}
+.ic-tv{background-image:url(img/ui/mi_tv.webp)}
+.ic-home{background-image:url(img/ui/mi_home.webp)}
+.ic-gear{background-image:url(img/ui/mi_gear.webp)}
+.ic-note{background-image:url(img/ui/mi_note.webp)}
+.sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ── 유튜브 고리 (src/pv.js PV_YOUTUBE_URL — 비어 있으면 그리지 않는다) ── */
+/* 혼자 하기 타이틀: 메뉴 아래 작은 칩(왼쪽 메뉴 칸 안 — 그림 · 얼굴 쪽으로 나가지 않음) */
+.ts-yt{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;margin:0 5px;padding:3px 14px 3px 6px;border-radius:99px;
+  font-size:15px;font-weight:800;color:#5a1d14;text-decoration:none;background:rgba(255,253,248,.94);border:1.5px solid #e2b6a6;
+  box-shadow:0 1px 4px rgba(74,44,28,.16);transition:transform var(--d1) var(--ease),background var(--d1)}
+.ts-yt .mi-ic{--ic:30px}
+.ts-yt:hover{background:#fff4ea;transform:translateY(-1px)}
+.ts-yt:focus-visible{outline:3px solid var(--blu-t);outline-offset:2px}
+/* PV 창 머리 줄: 「YouTube에서 보기 ↗」(창 안 어두운 바탕 위 밝은 칩) */
+.pvx-yt{flex:none;display:inline-flex;align-items:center;gap:6px;padding:4px 14px 4px 6px;border-radius:99px;white-space:nowrap;
+  font-size:15px;font-weight:800;color:#5a1d14;text-decoration:none;background:#fff8ee;border:2px solid #f1dfc4}
+.pvx-yt .mi-ic{--ic:30px}
+.pvx-yt:hover{background:#ffe9d6}
+.pvx-yt:focus-visible{outline:3px solid #ffd27a;outline-offset:3px}
+@media (max-width:600px){.pvx-yt{order:4}}
+
+/* ── 테크권 로고 인트로 · 전체 화면 단추 (2026-11-05 · src/techkwon-intro.js 스킬 그대로 · src/intro.js · src/fullscreen.js) ── */
+/* 인트로 자체 CSS 는 모듈이 넣는다(.tk-intro, z-index 2147483000 — 우리 화면은 80 이 가장 높다). 여기는 소리 · ⚙ 줄 안의 단추만 */
+.tk-fs-glyph{display:inline-block;width:1.6em;height:1.6em;vertical-align:middle}
+.snd-b.fsb{padding:2px 7px;min-height:30px}
+.snd-b.fsb::after{content:none}   /* 켜고 끄는 소리 단추가 아니라 꺼짐 ✕ 표시 없음(이름은 「전체 화면」/「창 모드로 돌아가기」) */
+.ts-foot{position:relative;z-index:1}   /* 아래 띠 글이 떨어지는 꽃잎에 가리지 않게 */
+.snd-b.fsb .tk-fs-glyph{width:24px;height:24px}
+/* ⚙ 설정 판의 「전체 화면으로 시작」은 움직임 줄 끝에 붙인다(줄을 하나 더 만들면 낮은 창에서 무대가 내려가 대사 상자가 머리에 닿는다) */
+.sp-fs{margin-left:6px}
+.sp-fs .sp-fsd{display:none}
+@media (min-width:1400px) and (min-height:760px){ .sp-fs .sp-fsd{display:inline} }
+@media (max-height:700px),(max-width:600px){ .setp .sp-md{display:none} }   /* 낮은 창 · 휴대 전화: 움직임 설명은 숨김(단추 글로 충분 · 줄이 늘지 않게) */
+

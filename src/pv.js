@@ -6,15 +6,32 @@
 //   - 영상을 못 불러오면 창 안에 알림만 띄운다(멈춰 버리는 일 없음)
 import { hush } from './sound.js';
 import { stopVoice } from './voice.js';
+import { menuIcon, esc } from './shared.js';
 
 export const PV_SRC = 'video/pv.mp4';
 export const PV_POSTER = 'video/pv.jpg';
+/**
+ * 유튜브에 올린 PV 주소 — 비어 있으면 유튜브 단추 · 알림 고리가 모두 숨는다.
+ * 넣으면: PV 창 머리 줄 「YouTube에서 보기 ↗」 + 혼자 하기 타이틀 「유튜브에서 PV 보기 ↗」(새 탭).
+ * https://youtu.be/… · https://www.youtube.com/… 만 받는다(다른 주소면 숨김). 바꾼 뒤 npm run build → 배포
+ */
+export const PV_YOUTUBE_URL = 'https://youtu.be/3cygUKyquNA';
+/** 쓸 수 있는 유튜브 주소(아니면 '') */
+export function pvYoutubeURL(u = PV_YOUTUBE_URL) {
+  const s = String(u || '').trim();
+  return /^https:\/\/(?:(?:www\.|m\.)?youtube\.com|youtu\.be)\/[^\s"'<>]+$/.test(s) ? s : '';
+}
+/** 혼자 하기 타이틀의 작은 유튜브 고리(주소가 없으면 빈 글) */
+export function pvYoutubeHTML(cls = 'ts-yt') {
+  const u = pvYoutubeURL();
+  return u ? `<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${menuIcon('tv')}유튜브에서 PV 보기 <span aria-hidden="true">↗</span><span class="sr">(새 탭)</span></a>` : '';
+}
 
 const st = { el: null, back: null, inert: [] };
 export const pvOpen = () => !!st.el;
 
 /** 타이틀 메뉴 항목(진행판 · 혼자 하기의 .ts-menu 안) */
-export const pvMenuHTML = () => '<button class="menu-i" id="bPV" type="button" aria-haspopup="dialog">▶ PV 보기 <small>소개 영상 · 약 50초</small></button>';
+export const pvMenuHTML = () => `<button class="menu-i" id="bPV" type="button" aria-haspopup="dialog">${menuIcon('film')}PV 보기 <small>소개 영상 · 약 50초</small></button>`;
 
 /**
  * 영상 창 열기. muted = 처음부터 소리 끔(학생 크롬북 — 교실에서 한꺼번에 울리지 않게, 영상의 소리 단추로 켤 수 있다)
@@ -36,6 +53,7 @@ export function openPV({ muted = false, from = null } = {}) {
       <div class="pvx-head">
         <b id="pvxT">손잡이 동아리 · PV</b>
         <span class="pvx-hint">Esc · 바깥을 누르면 닫혀요${muted ? ' · 소리는 꺼져 있어요(영상 아래 🔈 로 켜기 · 이어폰 추천)' : ''}</span>
+        ${pvYoutubeURL() ? `<a class="pvx-yt" href="${esc(pvYoutubeURL())}" target="_blank" rel="noopener noreferrer">${menuIcon('tv')}YouTube에서 보기 <span aria-hidden="true">↗</span><span class="sr">(새 탭)</span></a>` : ''}
         <button class="pvx-x" type="button" aria-label="PV 닫기">✕</button>
       </div>
       <div class="pvx-frame">
@@ -72,6 +90,8 @@ export function openPV({ muted = false, from = null } = {}) {
   v.addEventListener('error', fail);
   v.addEventListener('ended', () => { big.hidden = false; });
   x.onclick = () => closePV();
+  const yt = el.querySelector('.pvx-yt');
+  if (yt) yt.addEventListener('click', () => { try { v.pause(); } catch {} });   // 유튜브로 가면 이 창 영상은 멈춘다(소리 겹침 없게)
   el.querySelectorAll('.pvx-guard').forEach(g => g.addEventListener('focus', () => focusEdge(g.dataset.to)));
   // 바깥(어두운 바탕) 누르기 = 닫기. 영상 · 머리 줄 안을 누른 것은 닫지 않는다
   el.addEventListener('click', e => { if (e.target === el) closePV(); });
@@ -84,7 +104,7 @@ export function openPV({ muted = false, from = null } = {}) {
 /** 창 안에서 Tab 순서의 첫(✕) · 끝(영상 또는 ▶) 칸으로 */
 function focusEdge(to) {
   if (!st.el) return;
-  const f = [...st.el.querySelectorAll('.pvx-x, .pvx-v, .pvx-play')].filter(e => !e.hidden && e.offsetParent !== null);
+  const f = [...st.el.querySelectorAll('.pvx-yt, .pvx-x, .pvx-v, .pvx-play')].filter(e => !e.hidden && e.offsetParent !== null);
   const t = to === 'last' ? f[f.length - 1] : f[0];
   if (t) t.focus({ preventScroll: true });
 }

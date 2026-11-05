@@ -276,6 +276,17 @@ if (!QUICK && want('host')) {
     await p.evaluate(() => document.getElementById('bNew').click()); await sleep(200); await audit(p, 'host 수업 설정');
     await c.close();
   }
+  // 혼자 하기 첫 화면 · PV 창(메뉴 아이콘 · 유튜브 고리 — PV_YOUTUBE_URL 이 있으면 그 칩도) (2026-11-05)
+  for (const v of [V1366, V375]) {
+    const c = await browser.newContext({ viewport: v }); await motionInit('off')(c);
+    const p = await c.newPage();
+    await p.goto(`${srv.base}/alone.html`);
+    await p.waitForSelector('#bStartAlone'); await sleep(400);
+    await audit(p, 'alone 첫 화면');
+    await p.evaluate(() => document.getElementById('bPV').click()); await p.waitForSelector('.pvx'); await sleep(300);
+    await audit(p, 'alone PV 창');
+    await c.close();
+  }
   const h45 = await host(browser, { mode: 'class', seats: 45, motion: 'off' });
   for (let n = 1; n <= 3; n++) await student(browser, h45.code, n, V1366);
   await sleep(600); await audit(h45.page, 'host 대기실(45)');

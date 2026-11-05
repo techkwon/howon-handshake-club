@@ -9,7 +9,27 @@ export const here = path.dirname(fileURLToPath(import.meta.url));
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 export const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? (process.argv[i + 1] && !process.argv[i + 1].startsWith('--') ? process.argv[i + 1] : true) : d; };
 
-export async function loadPlaywright() {
+/**
+ * 시험 브라우저는 테크권 로고 인트로를 건너뛴다(모든 새 창 · 탭에 window.__vnNoIntro = true 를 심음 — src/intro.js).
+ * 인트로 자체를 보는 시험(test/intro.mjs)만 loadPlaywright({ intro: true }) 로 그대로 받는다
+ */
+export async function loadPlaywright({ intro = false } = {}) {
+  const pw = await loadPlaywrightRaw();
+  if (intro) return pw;
+  const skip = () => { window.__vnNoIntro = true; };
+  const wrapBrowser = b => {
+    const newContext = b.newContext.bind(b), newPage = b.newPage.bind(b);
+    b.newContext = async (...a) => { const c = await newContext(...a); await c.addInitScript(skip); return c; };
+    b.newPage = async (...a) => { const p = await newPage(...a); await p.addInitScript(skip); return p; };
+    return b;
+  };
+  const ch = pw.chromium;
+  const chromium = Object.create(ch);
+  chromium.launch = async (...a) => wrapBrowser(await ch.launch(...a));
+  chromium.launchPersistentContext = async (...a) => { const c = await ch.launchPersistentContext(...a); await c.addInitScript(skip); return c; };
+  return { ...pw, chromium };
+}
+async function loadPlaywrightRaw() {
   try { return await import('playwright'); } catch {}
   const roots = [];
   const cache = path.join(process.env.LOCALAPPDATA || '', 'npm-cache', '_npx');
@@ -82,8 +102,8 @@ export async function drop(srv, uid) {
 export async function stats(srv) { return (await fetch(`${srv.mockURL}/admin/stats`)).json(); }
 
 /** 설치된 크롬으로(Playwright 내려받기 없이) — 없으면 Playwright 의 것 */
-export async function launch(headless = true) {
-  const { chromium } = await loadPlaywright();
+export async function launch(headless = true, { intro = false } = {}) {
+  const { chromium } = await loadPlaywright({ intro });
   try { return await chromium.launch({ channel: 'chrome', headless }); }
   catch { return chromium.launch({ headless }); }
 }

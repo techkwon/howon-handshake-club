@@ -224,3 +224,28 @@ _개발/
   - 크기: 16:9 틀의 너비를 화면 높이에서 거꾸로 셈(`(100dvh − 머리 줄) × 16/9`, 최대 1600px) — 800×600 ~ 2560×1440 · 768×1024 · 375×812 에서 틀 · ✕ 가 화면 안
 - 시험 `node test/video.mjs`(246개): 세 타이틀 단추 · 11개 화면 크기 얼굴 가림 · 열어도 안 틂 · preload none · 첫 그림 · 재생 · hushed 켬/풀림 · 여는 곡 유지 · ✕ / Esc / 바깥 · 창 안 누르기는 안 닫힘 · Tab · Shift+Tab · inert · 학생 muted · 잠금 유지 · 404 알림 · 이야기 시작 · 방 만들기 그대로. 시험 서버(`test/serve.mjs`)는 Range(206) · mp4 · jpg 를 받는다. 실제 재생은 크롬 채널(H.264)이 있어야 한다
 - Codex 검토: 1차 중간 2 · 낮음 1(Tab 이 영상 안 단추를 건너뜀 · 실패 알림이 창을 화면 밖으로 밂 · 숨긴 ▶ 에 포커스) 모두 고침 → 2차 「높음 · 중간 없음」
+
+## 12. 타이틀 메뉴 아이콘 · 유튜브 고리 (2026-11-05)
+
+- **아이콘**: 원본 `../그림/UI/ui_menu_icons.png`(코덱스 그림 생성 · 기존 UI 그림을 참고 그림으로 · 자홍 #FF00FF 바탕 4열 × 3행 · 스티커 테두리). `tools/ui_art.py` 의 `GRIDS` 가 칸마다 잘라 바탕을 빼고(`unkey`) 긴 변 128px 로 `site/img/ui/mi_{door,key,book,hand,board,film,story,diploma,tv,home,gear,note}.webp` 를 만든다(덩어리 대신 칸으로 자름 — 손 옆 반짝이처럼 떨어진 조각도 남게). 다시 그리면 같은 4×3 차례로 그려 같은 파일에 덮어쓰고 `python tools/art.py`
+- 쓰는 곳(`src/shared.js` `menuIcon(이름)` → `<i class="mi-ic ic-이름" aria-hidden>` · 글 앞 장식): 진행판 새 수업 시작 문 · 이어서 하기 책 · 비상 모드 손 · 반 기록판 기록판 · PV 보기 필름 · 방 만들기 열쇠 · 처음 화면 집 / 혼자 하기 이야기 시작 이야기책 · 엔딩 도감 졸업장 · PV 보기 필름 · 유튜브 TV / 학생 들어가기 문 · PV 보기 필름. 「▶ PV 보기」의 ▶ · 「← 처음 화면」의 ← 는 아이콘으로 바꿨다(시험은 /PV 보기/ 로 찾으므로 그대로)
+- 소리 단추(🎵 · 🔊 · 🗣 · ⚙)는 그대로 둔다 — 머리띠와 같이 쓰는 켜기/끄기 단추(꺼짐 ✕ 표시 · 🔊/🔈 바뀜)라 그림으로 바꾸면 상태 표시가 흐려진다. 톱니 · 음표 그림(`mi_gear` · `mi_note`)은 만들어 두기만 했다
+- CSS(`styles.css` 끝): `.menu-i .mi-ic` 크기 `clamp(30px,1.45em,50px)` · 가운데 맞춤 · 올리면 살짝 기울기 / `.ic-btn` = 아이콘 든 `.btn`(inline-flex)
+- **유튜브**: `src/pv.js` `PV_YOUTUBE_URL`(2026-11-05 `https://youtu.be/3cygUKyquNA` · 비우면 아무것도 안 그림). `pvYoutubeURL()` 이 `https://youtu.be/…` · `https://(www.|m.)youtube.com/…` 만 받는다. 있으면 PV 창 머리 줄 `.pvx-yt` 「YouTube에서 보기 ↗」(누르면 창 안 영상은 멈춤) + 혼자 하기 타이틀 메뉴 아래 `.ts-yt` 칩(왼쪽 메뉴 칸 안 · 얼굴 검사 `.ts-col > *` 대상). 둘 다 새 탭 · `rel="noopener noreferrer"` · 화면 읽기용 「(새 탭)」
+- 시험 `node test/menu_icons.mjs [저장 폴더]` — 진행판 메뉴 · 수업 설정 · 혼자 하기 · 학생 들어가기 × 1920×1080 · 1366×768 · 1280×800 · 1024×768 · 800×600 · 768×1024 · 375×812 · 320×640: 아래 띠 글과 소리 · 전체 화면 줄 겹침 없음 · 아이콘 그림 불러옴 · 단추 안 · 얼굴 가림 · 가로 넘침 + PV 창 유튜브 고리(주소가 있으면 보임 · 화면 안 / 비면 없음). `test/contrast.mjs`(전체 판)에 혼자 하기 첫 화면 · PV 창 대비 검사를 더했다
+
+## 13. 테크권 로고 인트로 · 전체 화면 (2026-11-05 · 스킬 `techkwon-intro`)
+
+- `src/techkwon-intro.js`(+ `.d.ts`) = 스킬 템플릿 **원본 그대로**(로고 · 색 · 글 「테크권」 「presents」 「로고를 터치하세요」는 교사 확정 — 바꾸지 않는다). 로고 `site/brand/techkwon-logo.jpg`(460×460, 사이트 안에 둠 · 외부 주소 없음)
+- `src/intro.js` `startIntro({ quiet })`: 타이틀을 그린 **뒤** 부른다(host.js 맨 끝 `boot()` 다음 · play.js 첫 화면 다음). `armFullscreenOnFirstTap(() => fs 설정)` → `playTechkwonIntro({ logoUrl, ready: 바로, fullscreen: fs 설정, reduced: 움직임 off 면 true · 아니면 컴퓨터 설정 })` → 걷히면 타이틀이 잡아 둔 포커스(방 코드 칸 · 이야기 시작)로 되돌림. 학생이 수업 중 새로 고쳐 같은 방에 다시 들어가면 `quiet`(로고 없이 첫 누름 전체 화면만)
+- 건너뛰기 `introOff()`: `?nointro` · 시험 연결(`?mock=` · `?emu=` · `?speed=`, 단 `?intro=1` 이면 튼다) · `window.__vnNoIntro`(시험 도구가 심음). `window.__vnIntro.state` = off · on · done
+- 소리: 인트로 누름은 문서 capture 단계의 `pointerdown` · `keydown` · `click` 이라 `sound.js` 첫 누름 잠금 풀기가 그대로 된다(학생 크롬북 잠금 · 기본 끔은 그대로)
+- 설정: `S.pref.fs`(「전체 화면으로 시작」, `vn.snd.<page>` 에 함께 저장 · `typeof` 가 boolean 이 아니면 true — 저장값은 덮어쓰지 않음) · `soundState().fs`. ⚙ 설정 판 맨 아래 줄(전체 모드 학생 잠금 화면에도 — 전체 화면은 학생 기기에도 쓸모 있음) · 켜면 바로 `enterFullscreen()` 끄면 `exitFullscreen()` · `fullscreenSupported()` 가 거짓이면 줄을 숨김
+- 전체 화면 단추 `src/fullscreen.js` `fsBtnHTML()`: 스킬의 `createFullscreenButton` 과 같은 그림(`fullscreenGlyph`) · 같은 이름(「전체 화면」/「창 모드로 돌아가기」 · aria-label · title · data-tip) · `.tk-fs-btn` 이지만, 머리띠를 자주 다시 그려 단추마다 듣기를 더하면 쌓이므로 글로 그리고 누르기 · `fullscreenchange` 는 문서에 한 번만 건다. 소리 · ⚙ 줄(`soundCtlHTML`) 끝에 들어가 타이틀 아래 띠와 머리띠 둘 다에 보인다(꺼짐 ✕ 표시 없음). 진행판의 옛 ⛶(`#bFull`)는 없앴다
+- `manifest.webmanifest` `display: fullscreen`. 우리 화면 z-index 최대 80(PV 창) < 인트로 2147483000
+- 아래 띠(`.ts-foot`)는 `z-index:1` — 떨어지는 꽃잎이 글을 덮지 않게
+- 시험: `test/lib.mjs` `loadPlaywright()` 가 모든 창에 `window.__vnNoIntro = true` 를 심어 기존 시험은 인트로 없이 돈다(`loadPlaywright({ intro: true })` · `launch(true, { intro: true })` 는 그대로). `node test/intro.mjs` — 세 화면 인트로 · 「로고를 터치하세요」 · 한 번 누름 = `requestFullscreen` 한 번(감싸서 셈) · 소리 잠금 풀림 · 포커스 · `fullscreenchange` 흉내로 단추 이름 바뀜 · 설정 끔 = 저절로 · 움직임 끄기 = tk-reduced · Enter · `?nointro=1` · PV · z-index · 1280×800 · 375×740 · 320×640 · 740×360 배치
+- 인트로 동안 뒤 화면(body 의 다른 자식)은 `inert` — 진행판이 연결된 뒤 메뉴를 다시 그리며 포커스를 가져가도 못 받고, 인트로를 닫는 Enter · Tab 이 뒤 메뉴로 새지 않는다. 걷히면 inert 를 풀고 포커스는 원래 칸(다시 그려졌으면 `#tsSplash` · `#bNew` · `#bStartAlone` · `#iCode` 중 첫 것)으로 (Codex 지적 2026-11-05)
+- 전체 화면 단추나 ⚙ 스위치를 한 번이라도 손으로 누르면(`fullscreen.js` `fsManualUsed`) 「첫 누름 전체 화면」은 더 쓰지 않는다 — 창 모드로 나온 뒤 다음 누름에 다시 들어가 버리지 않게
+- ⚙ 「전체 화면으로 시작」은 따로 줄을 만들지 않고 「움직임」 줄 끝(`.sp-fs`)에 붙인다(줄이 늘면 800×420 에서 무대가 내려가 대사 상자가 머리에 닿았다 — `test/fx_sound.mjs`). 설명은 1400×760 이상에서만 글로, 그 밖에는 `title`. 움직임 설명(`.sp-md`)은 높이 700 이하 · 너비 600 이하에서 숨김
+

@@ -109,7 +109,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 | 🎵 · 🔊 · ⚙ 설정 | 🎵 음악 켜기/끄기 · 🔊 효과음 켜기/끄기 · ⚙ 설정 판(곡 1 · 2 · 3 · 크기 · 움직임) — 아래 「소리 · 움직임 설정」 |
 | 느리게 · 보통 · 빠르게 | 글 넘기는 속도. 진행 중에도 바꿀 수 있다 |
 | 교사가 정하기 | 갈림길(생각 시간 · 투표 중)에서 교사가 바로 고른다 — 시간이 모자랄 때 |
-| ⛶ | 전체 화면 |
+| 전체 화면 단추(모서리 네 개 그림 · 🎵 🔊 🗣 ⚙ 옆) | 전체 화면 ↔ 창 모드로 돌아가기(전체 화면이면 이름 · 그림이 바뀐다). 아이폰 사파리처럼 못 여는 곳에는 없다 |
 | 수업 끝 | 방과 기록을 모두 지운다(되돌릴 수 없음) |
 
 시간: 투표를 끝까지 기다리면 한 판 약 29분, 모두 빨리 내면 약 25분, 동률이 4번 나면 약 31분(시험 `test/unit.mjs` 계산).
@@ -161,6 +161,18 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 - 설정(켜기 · 곡 · 크기 · 움직임)은 그 컴퓨터에 기억된다. 탭을 다른 데로 옮기면 소리가 멈춘다
 - **🗣 목소리(풀 보이스)**: 인물 대사와 해설을 녹음으로 읽어 준다(Gemini 음성으로 미리 만든 `site/voice/*.ogg` 317개 · 약 23분 · 5.5MB). 진행판은 처음부터 켬 · 개인 모드 크롬북은 처음엔 끔(이어폰을 끼고 🗣 로 켬) · 전체 모드 크롬북은 늘 소리 없음. ⚙ 설정에서 목소리 켜기 · 크기 · 「해설 읽기」 따로 끄기. 말하는 동안 배경음악은 30% 작아진다. 전체 모드는 줄마다 녹음이 끝날 때까지(+0.45초) 기다렸다 넘어간다 — 한 판 시간은 거의 같다. 글을 고치면 그 줄은 녹음이 없어져 소리 없이 글만 나온다(다시 녹음해야 함)
 
+## 테크권 로고 인트로 · 전체 화면 (2026-11-05)
+
+세 시작 화면(학생 들어가기 · 진행판 · 혼자 하기)을 열면 먼저 **검은 화면에 테크권 로고**(약 3초)가 나오고, 끝에 **「로고를 터치하세요」**가 깜빡인다. 한 번 누르면(Enter · 스페이스도) **전체 화면**이 열리고 로고가 걷히며 타이틀이 보인다. 이 누름이 소리를 여는 첫 누름도 된다(진행판 · 혼자 하기는 소리 켬, 학생 크롬북은 그대로 소리 없음).
+
+- ⚙ 설정 **「전체 화면으로 시작」**(처음엔 켬 · 그 컴퓨터에 기억): 끄면 로고가 누름 없이 저절로 넘어가고 전체 화면을 열지 않는다
+- 움직임 「끄기」(또는 컴퓨터 「움직임 줄이기」)면 짧은 페이드만
+- 수업 중 학생 크롬북을 새로 고쳐 같은 방에 다시 들어가면 로고는 건너뛴다(전체 화면은 첫 누름에)
+- 아이폰 사파리 · 홈 화면에 설치한 앱은 전체 화면 기능이 없어 로고가 저절로 넘어간다(설치 앱은 원래 전체 화면 — `manifest.webmanifest` `display: fullscreen`)
+- 자동화 · 시험 브라우저는 전체 화면 요청을 막는다 — 실제 크롬북 · 교사 PC 에서 한 번 눌러 확인할 것
+- 로고 · 글(테크권 · presents · 로고를 터치하세요)은 교사 확정 모양 그대로. 파일 `src/techkwon-intro.js`(스킬 `techkwon-intro` 원본 그대로 · 고치지 않음) · `site/brand/techkwon-logo.jpg` · 연결 `src/intro.js` · 단추 `src/fullscreen.js`
+- 건너뛰기: 주소 끝에 `?nointro=1`
+
 ## ▶ PV(소개 영상)
 
 세 시작 화면(진행판 메뉴 · 학생 들어가기 화면 · 혼자 하기 메뉴)에 **▶ PV 보기** 가 있다. 누르면 화면 가운데 16:9 영상 창이 뜬다.
@@ -170,6 +182,7 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 - 닫기: **✕ · Esc · 영상 바깥(어두운 곳) 누르기**. 영상을 못 불러오면 창 안에 「불러오지 못했어요」만 뜨고 닫을 수 있다
 - 학생 들어가기 화면에서는 **소리 끈 채로** 열린다(교실 크롬북이 한꺼번에 울리지 않게 · 영상 아래 🔈 로 켬)
 - 파일: `site/video/pv.mp4`(H.264 + AAC · 1280×720 · faststart) + `site/video/pv.jpg`(첫 그림). **같은 이름으로 바꿔 넣고 배포만 하면 된다**(코드 · 빌드 그대로)
+- **유튜브 주소**: 지금 `https://youtu.be/3cygUKyquNA` (2026-11-05). 바꾸려면 `src/pv.js` 맨 위 `export const PV_YOUTUBE_URL = '…';` 의 따옴표 안 주소(`https://youtu.be/…` 또는 `https://www.youtube.com/…` 만 받음)를 넣고 `npm run build` → 배포. 그러면 PV 창 머리 줄에 「YouTube에서 보기 ↗」, 혼자 하기 첫 화면 메뉴 아래에 「유튜브에서 PV 보기 ↗」(새 탭)가 나온다. 비워 두면 둘 다 숨는다
 
 ## 화면 효과
 
@@ -198,13 +211,14 @@ netlify deploy --prod --no-build --dir site --site <site-id>
 |---|---|
 | 글 · 선택지 · 효과 · 엔딩 고치기 | `src/story.js` 하나만 → `node test/unit.mjs`(길이 40자 · 엔딩 10개 도달 · 시간) → `npm run build` |
 | 그림 새로 넣기 | `../그림/` 에 넣고 `python tools/art.py` → `npm run build` (없는 그림은 자리 그림으로 나온다) |
+| 타이틀 메뉴 아이콘(문 · 열쇠 · 책 · 손 · 기록판 · 필름 · 이야기책 · 졸업장 · TV · 집 · 톱니 · 음표) | 원본 `../그림/UI/ui_menu_icons.png`(코덱스 그림 · 자홍 바탕 4열 × 3행, 차례는 `tools/ui_art.py` `GRIDS`) → `python tools/art.py` → `site/img/ui/mi_*.webp`(긴 변 128px · 각 6~8 KB). 코드에서는 `menuIcon('door')`(`src/shared.js`) · CSS `.ic-door` 등(`site/styles.css` 끝). 그림을 다시 그리면 같은 칸 배치로 그려 같은 이름에 덮어쓴다 |
 | 화면 꾸밈 그림(틀 · 단추 · 키 비주얼) | `../그림/UI/` · `../그림/타이틀/` → 같은 `python tools/art.py`. 키 비주얼을 바꾸면 `tools/ui_art.py` 의 `KV_FACES`(얼굴 상자)도 다시 잰다 |
 | 제목 글꼴 | 이야기에 새 글자가 생기면 `python tools/font.py` (없는 글자는 시스템 글꼴로 보인다) |
 | 시간 바꾸기 | `src/flow.js` 의 `T` |
 | 음악 · 효과음 고치기 | `src/sound.js` 맨 위 `TRACKS`(화음 · 선율 악보) · 아래 `SFX` |
 | 목소리 다시 녹음 | 글이 바뀐 줄 · 빠진 줄만 다시 만들어 `site/voice/` 와 `src/voice-manifest.json` 에 넣는다(녹음 열쇠 = 그림 id + 화면 글 해시, `src/voice-key.js`) → `node test/voice.mjs` · `node test/voice_play.mjs` |
 | 화면 효과 고치기 | `src/fx.js`(날씨 · 감정 표시 · 흔들림 · 글자 찍기 · 넘기기 판정) · `site/styles.css` 끝 |
-| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/alone.mjs`(혼자 하기) · `node test/video.mjs`(PV 영상 창) · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
+| 시험 | `node test/unit.mjs` · `node test/rules.mjs` · `node test/load_class.mjs` · `node test/load_solo.mjs` · `node test/shots.mjs`(화면 + **얼굴 가림 검사**) · `node test/ending_shots.mjs` · `node test/alone.mjs`(혼자 하기) · `node test/video.mjs`(PV 영상 창) · `node test/menu_icons.mjs`(타이틀 메뉴 아이콘 · 유튜브 고리 · 아래 띠 겹침 · 8개 화면 크기) · `node test/intro.mjs`(테크권 인트로 · 전체 화면 요청 한 번 · 단추 바뀜 · 설정 끔 · 4개 화면 크기) · `node test/fx_sound.mjs`(소리 상태 · 눌러 넘기기 · 효과 얼굴 가림 · 움직임 줄이기) · `node test/contrast.mjs`(**글자 대비** — 모든 화면의 글자를 실제 바탕 화소와 비교, 보통 4.5 · 큰 글자 3 · 들어가기 · 대사 7 목표 + 다크 모드 · 크롬 자동 어둡게에서도 같은 화면인지. 약 15분, `--quick` 은 들어가기 · 대사만) (브라우저 시험은 **한 번에 하나씩**) |
 | PV 바꾸기 | 새 `pv.mp4` · `pv.jpg` 를 `site/video/` 에 같은 이름으로 덮어쓴다 → `node test/video.mjs`(열기 · 닫기 · 소리 · 실패 알림 · 화면 크기) → 배포 |
 | 배포 | `npm run build` 뒤 `netlify deploy --prod --no-build --dir site --site <site id>` (`site/` 를 바로 올린다 — `site/voice/` · `site/video/` 포함) |
 

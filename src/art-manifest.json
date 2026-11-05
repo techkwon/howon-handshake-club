@@ -487,6 +487,66 @@
    "w": 64,
    "h": 72
   },
+  "mi_door": {
+   "src": "img/ui/mi_door.webp",
+   "w": 112,
+   "h": 128
+  },
+  "mi_key": {
+   "src": "img/ui/mi_key.webp",
+   "w": 86,
+   "h": 128
+  },
+  "mi_book": {
+   "src": "img/ui/mi_book.webp",
+   "w": 109,
+   "h": 128
+  },
+  "mi_hand": {
+   "src": "img/ui/mi_hand.webp",
+   "w": 119,
+   "h": 128
+  },
+  "mi_board": {
+   "src": "img/ui/mi_board.webp",
+   "w": 114,
+   "h": 128
+  },
+  "mi_film": {
+   "src": "img/ui/mi_film.webp",
+   "w": 128,
+   "h": 103
+  },
+  "mi_story": {
+   "src": "img/ui/mi_story.webp",
+   "w": 128,
+   "h": 89
+  },
+  "mi_diploma": {
+   "src": "img/ui/mi_diploma.webp",
+   "w": 128,
+   "h": 93
+  },
+  "mi_tv": {
+   "src": "img/ui/mi_tv.webp",
+   "w": 126,
+   "h": 128
+  },
+  "mi_home": {
+   "src": "img/ui/mi_home.webp",
+   "w": 128,
+   "h": 102
+  },
+  "mi_gear": {
+   "src": "img/ui/mi_gear.webp",
+   "w": 128,
+   "h": 125
+  },
+  "mi_note": {
+   "src": "img/ui/mi_note.webp",
+   "w": 128,
+   "h": 109
+  },
   "paper": {
    "src": "img/ui/paper.webp",
    "w": 512,

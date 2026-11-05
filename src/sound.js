@@ -4,6 +4,7 @@
 // 브라우저 자동 재생 규칙: 사용자가 처음 누를 때(누르기 · 키) 소리 장치를 만든다. 탭이 숨으면 멈춘다.
 // 설정(BGM · SFX 켜기, 크기, 곡 번호)은 이 기기 localStorage 에만(시도 · 실패해도 됨).
 import { LS } from './shared.js';
+import { fsBtnHTML, fullscreenSupported, enterFullscreen, exitFullscreen, markFsManual } from './fullscreen.js';
 
 // ── 곡 악보 ─────────────────────────────────────────────────────
 // 화음 이름(C · Am · F/A · Bbmaj7 · Em7 · C7 · D/F#)과 마디마다 선율(「음이름:박」, r = 쉼).
@@ -135,6 +136,7 @@ export function initSound({ page, defaults = {}, locked = false } = {}) {
   if (!MAIN_IDS.includes(S.pref.track)) S.pref.track = 'm1';
   if (!MOTIONS.some(([k]) => k === S.pref.motion)) S.pref.motion = 'hi';
   S.pref.bgmVol = clamp01(S.pref.bgmVol); S.pref.sfxVol = clamp01(S.pref.sfxVol); S.pref.voiceVol = clamp01(S.pref.voiceVol ?? 0.9);
+  if (typeof S.pref.fs !== 'boolean') S.pref.fs = true;   // 「전체 화면으로 시작」(테크권 인트로) — 처음엔 켬, 저장값이 있으면 그대로
   applyMotion();
   const unlock = () => { if (!S.locked && (S.pref.bgm || S.pref.sfx)) ensure(); };
   for (const ev of ['pointerdown', 'keydown', 'click']) document.addEventListener(ev, unlock, { capture: true });
@@ -150,7 +152,7 @@ export function initSound({ page, defaults = {}, locked = false } = {}) {
 export function soundState() {
   return {
     page: S.page, locked: S.locked, bgm: S.pref.bgm, sfx: S.pref.sfx, bgmVol: S.pref.bgmVol, sfxVol: S.pref.sfxVol, track: S.pref.track, motion: S.pref.motion,
-    voice: !!S.pref.voice, voiceVol: S.pref.voiceVol, narr: S.pref.narr !== false, ducked: !!S.ducked, hushed: !!S.hushed,
+    voice: !!S.pref.voice, voiceVol: S.pref.voiceVol, narr: S.pref.narr !== false, fs: S.pref.fs !== false, ducked: !!S.ducked, hushed: !!S.hushed,
     want: S.want, playing: S.cur ? S.cur.id : null, mood: S.mood, ctx: S.ctx ? S.ctx.state : 'none', amb: S.amb, ambOn: !!S.ambNode,
   };
 }
@@ -621,13 +623,16 @@ const MOTION_DESC = { hi: '모든 움직임(날씨 · 숨쉬기 · 카메라 · 
 export function soundCtlHTML(cls = '') {
   const p = S.pref, open = !!document.getElementById('setp');
   const gear = `<button type="button" class="snd-b gear ${open ? 'on' : ''}" data-set="1" aria-expanded="${open}" aria-controls="setp" title="설정 — 배경음악 · 효과음 · 목소리 · 움직임">⚙<span class="snd-l">설정</span></button>`;
-  if (S.locked) return `<span class="snd ${cls}" role="group" aria-label="설정">${gear}</span>`;
+  const fsb = fsBtnHTML('snd-b fsb');   // 전체 화면 / 창 모드로 돌아가기(못 여는 곳이면 없음)
+  if (S.locked) return `<span class="snd ${cls}" role="group" aria-label="설정">${gear}${fsb}</span>`;
   return `<span class="snd ${cls}" role="group" aria-label="소리 · 설정">
     <button type="button" class="snd-b ${p.bgm ? 'on' : ''}" data-snd="bgm" aria-pressed="${p.bgm}" title="배경음악 켜기 · 끄기">🎵<span class="snd-l">음악</span></button>
     <button type="button" class="snd-b ${p.sfx ? 'on' : ''}" data-snd="sfx" aria-pressed="${p.sfx}" title="효과음 켜기 · 끄기(날씨 소리도 함께)">${p.sfx ? '🔊' : '🔈'}<span class="snd-l">효과음</span></button>
     <button type="button" class="snd-b ${p.voice ? 'on' : ''}" data-snd="voice" aria-pressed="${!!p.voice}" title="목소리(대사 읽기) 켜기 · 끄기">🗣<span class="snd-l">목소리</span></button>
-    ${gear}</span>`;
+    ${gear}${fsb}</span>`;
 }
+// 「전체 화면으로 시작」 설명(테크권 인트로 스킬 문구) — 넓고 높은 화면에서만 글로, 그 밖에는 마우스를 올리면(title)
+const FS_DESC = "로고 화면에서 '로고를 터치하세요'를 누르면 전체 화면으로 열려요. 끄면 로고 화면이 터치 없이 바로 넘어가요.";
 function settingsHTML() {
   const p = S.pref;
   const sw = (k, on) => `<button type="button" class="sp-sw ${on ? 'on' : ''}" data-snd="${k}" aria-pressed="${on}">${on ? '켬' : '끔'}</button>`;
@@ -643,7 +648,8 @@ function settingsHTML() {
       <span class="dim small">${S.page === 'solo' ? '이어폰을 끼고 켜 주세요' : '인물 대사와 해설을 읽어 줘요'}</span></div>`}
     <div class="sp-g" role="group" aria-label="움직임"><b>✨ 움직임</b>
       <span class="sp-mo">${MOTIONS.map(([k, l]) => `<button type="button" class="sp-mob ${p.motion === k ? 'on' : ''}" data-motion="${k}" aria-pressed="${p.motion === k}">${l}</button>`).join('')}</span>
-      <span class="dim small sp-md">${MOTION_DESC[p.motion]}</span></div>
+      <span class="dim small sp-md">${MOTION_DESC[p.motion]}</span>
+      ${fullscreenSupported() ? `<span class="sp-sub sp-fs" role="group" aria-label="전체 화면으로 시작" title="${FS_DESC}"><b>⛶ 전체 화면으로 시작</b>${sw('fs', p.fs !== false)}<span class="dim small sp-fsd">${FS_DESC}</span></span>` : ''}</div>
     <button type="button" class="sp-x" data-set="0" aria-label="설정 닫기">닫기 ✕</button></div>`;
 }
 /** 설정 판 열기 · 닫기(머리띠 바로 아래 한 줄) */
@@ -669,7 +675,11 @@ function renderSettings() {
 export function bindSoundCtl(root, rerender) {
   if (!root) return;
   const re = () => { rerender && rerender(); renderSettings(); };
-  root.querySelectorAll('[data-snd]').forEach(b => b.onclick = () => { const k = b.dataset.snd; setSound({ [k]: !S.pref[k] }); if (k === 'sfx' && S.pref.sfx) play('select'); re(); });
+  root.querySelectorAll('[data-snd]').forEach(b => b.onclick = () => {
+    const k = b.dataset.snd;
+    if (k === 'fs') { const v = S.pref.fs === false; setSound({ fs: v }); markFsManual(); if (v) enterFullscreen(); else exitFullscreen(); re(); return; }   // 켜면 바로 전체 화면 · 끄면 창 모드
+    setSound({ [k]: !S.pref[k] }); if (k === 'sfx' && S.pref.sfx) play('select'); re();
+  });
   root.querySelectorAll('[data-trk]').forEach(b => b.onclick = () => { setSound({ track: b.dataset.trk, bgm: true }); re(); });
   root.querySelectorAll('[data-motion]').forEach(b => b.onclick = () => { setSound({ motion: b.dataset.motion }); re(); const f = document.querySelector(`#setp [data-motion="${b.dataset.motion}"]`); if (f) f.focus({ preventScroll: true }); });
   root.querySelectorAll('[data-vol]').forEach(r => { r.oninput = () => setSound({ [r.dataset.vol]: Number(r.value) / 100 }); r.onchange = () => { if (r.dataset.vol === 'sfxVol') play('select'); }; });
